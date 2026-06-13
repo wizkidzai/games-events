@@ -1,0 +1,25 @@
+/* Light theme — default */
+.theme-light,
+body {
+  --color-bg: var(--color-bg-light);
+  --color-surface: #ffffff;
+  --color-text: var(--color-text-dark);
+  --color-text-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-input-bg: #ffffff;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not(.theme-light) {
+    --color-bg: var(--color-bg-dark);
+    --color-surface: #3d3d3d;
+    --color-text: var(--color-text-light);
+    --color-text-muted: #9ca3af;
+    --color-border: #4b5563;
+    --color-input-bg: #3d3d3d;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+  }
+}

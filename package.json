@@ -1,0 +1,61 @@
+{
+  "name": "wizkidz-conference-games",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Wiz Kidz conference booth games monorepo",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  },
+  "scripts": {
+    "dev": "pnpm -r --filter './games/*' run dev",
+    "dev:kiosk": "pnpm --filter booth-kiosk dev",
+    "dev:admin": "pnpm --filter admin-card-config dev",
+    "build": "pnpm -r run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx --ignore-path .gitignore",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --ignore-path .gitignore --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "create-game": "node scripts/create-game.js",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@storybook/react": "^8.1.0",
+    "@storybook/react-vite": "^8.1.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.0",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.34.2",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "husky": "^9.0.11",
+    "jsdom": "^29.1.1",
+    "lint-staged": "^15.2.5",
+    "postcss": "^8.4.38",
+    "prettier": "^3.3.0",
+    "storybook": "^8.1.0",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.12",
+    "vitest": "^1.6.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,json,md}": [
+      "prettier --write"
+    ]
+  }
+}

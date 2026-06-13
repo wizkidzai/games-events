@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-06-13",
+  "description": "NTAG213 card data structure for Wiz Kidz booth games",
+  "cardStructure": {
+    "totalBytes": 180,
+    "usedBytes": 7,
+    "byteLayout": [
+      {
+        "byte": 0,
+        "name": "mascotID",
+        "type": "uint8",
+        "range": [0, 5],
+        "description": "Mascot identifier (0=Peacock Pride, 1=Orchid Mantis, 2=Red Fox, 3=Green Frog, 4=Yellow Fawn, 5=Blue Jay)",
+        "immutable": true,
+        "defaultValue": null
+      },
+      {
+        "bytes": "1-4",
+        "name": "uniqueID",
+        "type": "string",
+        "format": "YYYYMMDD_HHMMSS_XXXX",
+        "description": "Unique player identifier (timestamp + random hex), generated at card setup",
+        "immutable": true,
+        "example": "20260613_143530_a7f2"
+      },
+      {
+        "bytes": "5-6",
+        "name": "totalPoints",
+        "type": "uint16",
+        "range": [0, 65535],
+        "description": "Cumulative score across all games for this mascot, updated after each game",
+        "immutable": false,
+        "defaultValue": 0
+      },
+      {
+        "bytes": "7+",
+        "name": "reserved",
+        "type": "bytes",
+        "range": "Bytes 7-179",
+        "description": "Reserved for future expansion",
+        "immutable": true
+      }
+    ]
+  },
+  "breakingChanges": {
+    "1.0": {
+      "date": "2026-06-13",
+      "description": "Initial version",
+      "migration": "N/A"
+    }
+  }
+}

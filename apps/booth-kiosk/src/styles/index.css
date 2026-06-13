@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import '@wizkidz/design-system/tokens.css';
+@import '@wizkidz/design-system/themes/light.css';
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  min-height: 100vh;
+}

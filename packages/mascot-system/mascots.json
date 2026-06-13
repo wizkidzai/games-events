@@ -1,0 +1,100 @@
+{
+  "mascots": [
+    {
+      "id": 0,
+      "name": "Peacock Pride",
+      "color": "#006464",
+      "personality": "Inventor",
+      "greeting": "Hey explorer! I'm Peacock Pride. Ready to solve some puzzles?",
+      "encouragement": ["You've got this!", "Great thinking!", "Almost there..."],
+      "celebration": "We did it! Fantastic work!",
+      "hint": "Think about the pattern...",
+      "dialogue": {
+        "hint": "Think about the pattern...",
+        "success": "Great thinking!",
+        "failure": "Not yet — try again!",
+        "celebration": "We solved it!"
+      }
+    },
+    {
+      "id": 1,
+      "name": "Orchid Mantis",
+      "color": "#A30078",
+      "personality": "Coder",
+      "greeting": "I'm Orchid Mantis! Let's code this together.",
+      "encouragement": ["You're smart!", "Try again!", "I believe in you!"],
+      "celebration": "Amazing! You nailed it!",
+      "hint": "Debug your logic...",
+      "dialogue": {
+        "hint": "Debug your logic...",
+        "success": "Smart move!",
+        "failure": "Try again!",
+        "celebration": "Perfect code!"
+      }
+    },
+    {
+      "id": 2,
+      "name": "Red Fox",
+      "color": "#FF4747",
+      "personality": "Explorer",
+      "greeting": "Red Fox here! Ready for an adventure? Let's go!",
+      "encouragement": ["Go for it!", "Move fast!", "Be bold!"],
+      "celebration": "Woohoo! You blazed through it!",
+      "hint": "Trust your instincts!",
+      "dialogue": {
+        "hint": "Trust your instincts!",
+        "success": "Bold move!",
+        "failure": "Shake it off — go again!",
+        "celebration": "Blazing fast!"
+      }
+    },
+    {
+      "id": 3,
+      "name": "Green Frog",
+      "color": "#43A277",
+      "personality": "Mentor",
+      "greeting": "Green Frog at your service. Take your time. You can do this.",
+      "encouragement": ["Breathe. You've got this.", "Patience wins.", "Steady now..."],
+      "celebration": "Beautifully done. I knew you could.",
+      "hint": "Slow down and look carefully...",
+      "dialogue": {
+        "hint": "Slow down and look carefully...",
+        "success": "Well reasoned!",
+        "failure": "That's okay — what can we learn?",
+        "celebration": "Beautifully done."
+      }
+    },
+    {
+      "id": 4,
+      "name": "Yellow Fawn",
+      "color": "#FFC832",
+      "personality": "Cheerleader",
+      "greeting": "Yellow Fawn here! This is going to be fun! Let's play!",
+      "encouragement": ["You're amazing!", "Keep going!", "YES! More!"],
+      "celebration": "YESSS! You're incredible!!",
+      "hint": "You already know this — just go!",
+      "dialogue": {
+        "hint": "You already know this — just go!",
+        "success": "AMAZING!",
+        "failure": "No worries — you've got this!",
+        "celebration": "YESSS! You're incredible!!"
+      }
+    },
+    {
+      "id": 5,
+      "name": "Blue Jay",
+      "color": "#0AA4EB",
+      "personality": "Engineer",
+      "greeting": "I'm Blue Jay. Logic and strategy. You've got this!",
+      "encouragement": ["Analyze carefully.", "Check your assumptions.", "Logical approach!"],
+      "celebration": "Optimal solution achieved.",
+      "hint": "Break it down systematically...",
+      "dialogue": {
+        "hint": "Break it down systematically...",
+        "success": "Logical!",
+        "failure": "Re-evaluate your approach.",
+        "celebration": "Optimal solution achieved."
+      }
+    }
+  ]
+}

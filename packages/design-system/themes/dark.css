@@ -1,0 +1,11 @@
+/* Dark theme — explicit override */
+.theme-dark {
+  --color-bg: var(--color-bg-dark);
+  --color-surface: #3d3d3d;
+  --color-text: var(--color-text-light);
+  --color-text-muted: #9ca3af;
+  --color-border: #4b5563;
+  --color-input-bg: #3d3d3d;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}

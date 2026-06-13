@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-06-13",
+  "games": [
+    {
+      "id": "chess-masters",
+      "name": "Chess Masters",
+      "description": "Solve strategic puzzles in minimum moves",
+      "mascotID": 0,
+      "ageGroups": [1, 2],
+      "difficulty": ["easy", "medium", "hard"],
+      "estimatedPlaytime": 180,
+      "featured": true
+    },
+    {
+      "id": "memory-game",
+      "name": "Memory Game",
+      "description": "Replay the sequence of mascots",
+      "mascotID": 1,
+      "ageGroups": [0, 1, 2],
+      "difficulty": ["easy", "medium", "hard"],
+      "estimatedPlaytime": 120,
+      "featured": true
+    }
+  ,
+    {
+      "id": "mascot-runner",
+      "name": "Mascot Runner",
+      "description": "Infinite side-scrolling runner — jump over obstacles and beat your score!",
+      "mascotID": 0,
+      "anyMascot": true,
+      "ageGroups": [0, 1, 2],
+      "difficulty": ["easy", "medium", "hard"],
+      "estimatedPlaytime": 90,
+      "featured": true
+    }
+  ]
+}

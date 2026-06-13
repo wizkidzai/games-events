@@ -1,0 +1,65 @@
+/* Wiz Kidz Design System — CSS Custom Properties */
+
+:root {
+  /* Primary Colors */
+  --color-primary-teal: #006464;
+  --color-primary-magenta: #a30078;
+
+  /* Secondary Colors (mascots & accents) */
+  --color-secondary-yellow: #ffc832;
+  --color-secondary-blue: #0aa4eb;
+  --color-secondary-red: #ff4747;
+  --color-secondary-green: #43a277;
+
+  /* Neutral Colors */
+  --color-text-dark: #2d2d2d;
+  --color-text-light: #fafafa;
+  --color-bg-light: #fafafa;
+  --color-bg-dark: #2d2d2d;
+
+  /* Spacing (8px base unit) */
+  --space-half: 4px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+
+  /* Typography */
+  --font-display: 'Gill Sans Display', 'Gill Sans', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
+  --font-ui: 'Poppins', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px — minimum */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.5rem; /* 24px */
+  --text-xl: 2rem; /* 32px */
+  --text-2xl: 2.5rem; /* 40px */
+
+  --leading-body: 1.5;
+  --leading-heading: 1.2;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Shadow */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.24);
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 2px var(--color-primary-teal);
+
+  /* Mascot sizes */
+  --mascot-sm: 80px;
+  --mascot-md: 120px;
+  --mascot-lg: 240px;
+
+  /* Transition */
+  --transition-fast: 100ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+}
