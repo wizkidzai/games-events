@@ -1,130 +1,96 @@
 import Phaser from 'phaser';
 import { getMascotByID } from '@wizkidz/mascot-system';
-import { getState, setDifficulty, startGame } from '../systems/gameState';
-import type { Difficulty } from '../systems/types';
+import { setDifficulty, startGame } from '../systems/gameState';
 
-const MASCOT_ID = 0; // Peacock Pride — locked to Chess Masters
+const MASCOT_ID = 0;
+const MASCOT_COLOR = 0x006464;
+const MASCOT_EMOJI = '🦚';
 
 export class MenuScene extends Phaser.Scene {
-  constructor() {
-    super({ key: 'MenuScene' });
-  }
+  private hasLaunched = false;
+
+  constructor() { super({ key: 'MenuScene' }); }
 
   create(): void {
     const { width, height } = this.scale;
-    const mascot = getMascotByID(MASCOT_ID);
-    const state = getState();
+    this.hasLaunched = false;
 
-    // Background
-    this.cameras.main.setBackgroundColor('#FAFAFA');
+    this.cameras.main.setBackgroundColor('#0d0d1a');
+    this.drawBackground(width, height);
 
-    // Title
-    this.add
-      .text(width / 2, 80, 'Chess Masters', {
-        fontSize: '42px',
-        fontFamily: 'Poppins, sans-serif',
-        color: '#006464',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    this.add.text(width / 2, 52, 'CHESS MASTERS', {
+      fontSize: '44px', fontFamily: 'Poppins, sans-serif', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5);
 
-    // Mascot greeting
-    this.add
-      .text(width / 2, 160, mascot.greeting, {
-        fontSize: '18px',
-        fontFamily: 'Poppins, sans-serif',
-        color: '#2D2D2D',
-        wordWrap: { width: 500 },
-        align: 'center',
-      })
-      .setOrigin(0.5);
+    this.add.text(width / 2, 94, 'Wiz Kidz Conference  ✦  Arrange pieces · Fewest moves · Beat your score', {
+      fontSize: '13px', fontFamily: 'Poppins, sans-serif', color: '#ffc832',
+    }).setOrigin(0.5);
 
-    // Welcome back text
-    if (state.cardUID) {
-      this.add
-        .text(width / 2, 220, `Welcome back! High score: ${state.cardScorePrevious} pts`, {
-          fontSize: '14px',
-          fontFamily: 'Poppins, sans-serif',
-          color: '#6b7280',
-        })
-        .setOrigin(0.5);
+    // Mascot card — Peacock Pride is the locked mascot for Chess Masters
+    const cardCX = width / 2;
+    const cardCY = 256;
+    const cardW = 130;
+    const cardH = 120;
+
+    const cardGfx = this.add.graphics();
+    cardGfx.fillStyle(MASCOT_COLOR, 0.72);
+    cardGfx.fillRoundedRect(cardCX - cardW / 2, cardCY - cardH / 2, cardW, cardH, 14);
+
+    this.add.text(cardCX, cardCY - 16, MASCOT_EMOJI, { fontSize: '40px' }).setOrigin(0.5);
+    this.add.text(cardCX, cardCY + 30, getMascotByID(MASCOT_ID).name.split(' ')[0], {
+      fontSize: '12px', fontFamily: 'Poppins, sans-serif', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    // Selection border
+    const borderGfx = this.add.graphics();
+    borderGfx.lineStyle(6, 0xffffff, 0.14);
+    borderGfx.strokeRoundedRect(cardCX - cardW / 2 - 5, cardCY - cardH / 2 - 5, cardW + 10, cardH + 10, 18);
+    borderGfx.lineStyle(2.5, 0xffffff, 0.95);
+    borderGfx.strokeRoundedRect(cardCX - cardW / 2 - 2, cardCY - cardH / 2 - 2, cardW + 4, cardH + 4, 16);
+
+    this.add.text(width / 2, 348, getMascotByID(MASCOT_ID).name, {
+      fontSize: '22px', fontFamily: 'Poppins, sans-serif', color: '#006464', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, 388, 'Solve the chess puzzle in the fewest moves possible', {
+      fontSize: '14px', fontFamily: 'Poppins, sans-serif', color: '#8ab4f8',
+    }).setOrigin(0.5);
+
+    const enterText = this.add.text(width / 2, 448, '● PRESS ENTER TO START ●', {
+      fontSize: '20px', fontFamily: 'Poppins, sans-serif', color: '#ffc832', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: enterText, alpha: 0.25, duration: 700, ease: 'Sine.InOut', yoyo: true, repeat: -1 });
+
+    this.add.text(width / 2, height - 22, 'Medium difficulty — 10 moves to score as high as possible', {
+      fontSize: '11px', fontFamily: 'Poppins, sans-serif', color: '#2a2a45',
+    }).setOrigin(0.5);
+
+    this.input.keyboard?.on('keydown-ENTER', () => this.launchGame());
+    this.input.keyboard?.on('keydown-SPACE', () => this.launchGame());
+  }
+
+  private drawBackground(width: number, height: number): void {
+    const g = this.add.graphics();
+    const bands = [
+      { y: 0,   h: 130,        c: 0x06060f },
+      { y: 130, h: 160,        c: 0x0b0b1e },
+      { y: 290, h: height-290, c: 0x101028 },
+    ];
+    for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, width, b.h); }
+    for (let i = 0; i < 110; i++) {
+      const x = Phaser.Math.Between(0, width);
+      const y = Phaser.Math.Between(0, height);
+      g.fillStyle(0xffffff, 0.18 + Math.random() * 0.6);
+      g.fillCircle(x, y, Math.random() < 0.08 ? 2 : Math.random() < 0.25 ? 1.3 : 0.7);
     }
-
-    // Instructions
-    this.add
-      .text(
-        width / 2,
-        290,
-        'Arrange the chess pieces to match the target pattern\nin the fewest moves possible.',
-        {
-          fontSize: '16px',
-          fontFamily: 'Poppins, sans-serif',
-          color: '#4b5563',
-          align: 'center',
-          wordWrap: { width: 480 },
-        }
-      )
-      .setOrigin(0.5);
-
-    // Difficulty selector
-    this.add
-      .text(width / 2, 370, 'Select Difficulty:', {
-        fontSize: '16px',
-        fontFamily: 'Poppins, sans-serif',
-        color: '#374151',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
-
-    const difficulties: Difficulty[] = ['easy', 'medium', 'hard'];
-    const diffColors: Record<Difficulty, string> = {
-      easy: '#43A277',
-      medium: '#FFC832',
-      hard: '#FF4747',
-    };
-    difficulties.forEach((diff, i) => {
-      const x = width / 2 + (i - 1) * 140;
-      const btn = this.add
-        .rectangle(x, 420, 120, 44, parseInt(diffColors[diff].replace('#', ''), 16))
-        .setInteractive({ cursor: 'pointer' });
-
-      this.add
-        .text(x, 420, diff.toUpperCase(), {
-          fontSize: '14px',
-          fontFamily: 'Poppins, sans-serif',
-          color: '#ffffff',
-          fontStyle: 'bold',
-        })
-        .setOrigin(0.5);
-
-      btn.on('pointerup', () => {
-        setDifficulty(diff);
-        this.launchGame();
-      });
-      btn.on('pointerover', () => btn.setAlpha(0.85));
-      btn.on('pointerout', () => btn.setAlpha(1));
-    });
-
-    // Start button (keyboard shortcut)
-    const startBtn = this.add
-      .rectangle(width / 2, 510, 220, 50, 0x006464)
-      .setInteractive({ cursor: 'pointer' });
-    this.add
-      .text(width / 2, 510, 'Start Game  →', {
-        fontSize: '18px',
-        fontFamily: 'Poppins, sans-serif',
-        color: '#ffffff',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
-
-    startBtn.on('pointerup', () => this.launchGame());
-
-    // Keyboard: Enter to start
-    this.input.keyboard?.once('keydown-ENTER', () => this.launchGame());
+    g.fillStyle(0xfffce8, 0.88); g.fillCircle(width - 95, 58, 26);
+    g.fillStyle(0x06060f, 1);    g.fillCircle(width - 82, 52, 21);
   }
 
   private launchGame(): void {
+    if (this.hasLaunched) return;
+    this.hasLaunched = true;
+    setDifficulty('medium');
     startGame();
     this.scene.start('GameScene');
   }

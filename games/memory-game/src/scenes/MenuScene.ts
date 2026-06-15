@@ -1,68 +1,94 @@
 import Phaser from 'phaser';
 import { getMascotByID } from '@wizkidz/mascot-system';
-import { getState, setDifficulty, startGame } from '../systems/gameState';
-import type { Difficulty } from '../systems/types';
+import { setDifficulty, startGame } from '../systems/gameState';
 
-const MASCOT_ID = 1; // Orchid Mantis — locked to Memory Game
+const MASCOT_ID = 1;
+const MASCOT_COLOR = 0xa30078;
+const MASCOT_EMOJI = '🦋';
 
 export class MenuScene extends Phaser.Scene {
+  private hasLaunched = false;
+
   constructor() { super({ key: 'MenuScene' }); }
 
   create(): void {
     const { width, height } = this.scale;
-    const mascot = getMascotByID(MASCOT_ID);
-    const state = getState();
-    this.cameras.main.setBackgroundColor('#FAFAFA');
+    this.hasLaunched = false;
 
-    this.add.text(width / 2, 80, 'Memory Game', {
-      fontSize: '42px', fontFamily: 'Poppins, sans-serif', color: '#A30078', fontStyle: 'bold',
+    this.cameras.main.setBackgroundColor('#0d0d1a');
+    this.drawBackground(width, height);
+
+    this.add.text(width / 2, 52, 'MEMORY GAME', {
+      fontSize: '44px', fontFamily: 'Poppins, sans-serif', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, 160, mascot.greeting, {
-      fontSize: '18px', fontFamily: 'Poppins, sans-serif', color: '#2D2D2D',
-      wordWrap: { width: 500 }, align: 'center',
+    this.add.text(width / 2, 94, 'Wiz Kidz Conference  ✦  Watch the sequence · Repeat it · Beat your score', {
+      fontSize: '13px', fontFamily: 'Poppins, sans-serif', color: '#ffc832',
     }).setOrigin(0.5);
 
-    if (state.cardUID) {
-      this.add.text(width / 2, 220, `Welcome back! High score: ${state.cardScorePrevious} pts`, {
-        fontSize: '14px', fontFamily: 'Poppins, sans-serif', color: '#6b7280',
-      }).setOrigin(0.5);
+    const cardCX = width / 2;
+    const cardCY = 256;
+    const cardW = 130;
+    const cardH = 120;
+
+    const cardGfx = this.add.graphics();
+    cardGfx.fillStyle(MASCOT_COLOR, 0.72);
+    cardGfx.fillRoundedRect(cardCX - cardW / 2, cardCY - cardH / 2, cardW, cardH, 14);
+
+    this.add.text(cardCX, cardCY - 16, MASCOT_EMOJI, { fontSize: '40px' }).setOrigin(0.5);
+    this.add.text(cardCX, cardCY + 30, getMascotByID(MASCOT_ID).name.split(' ')[0], {
+      fontSize: '12px', fontFamily: 'Poppins, sans-serif', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    const borderGfx = this.add.graphics();
+    borderGfx.lineStyle(6, 0xffffff, 0.14);
+    borderGfx.strokeRoundedRect(cardCX - cardW / 2 - 5, cardCY - cardH / 2 - 5, cardW + 10, cardH + 10, 18);
+    borderGfx.lineStyle(2.5, 0xffffff, 0.95);
+    borderGfx.strokeRoundedRect(cardCX - cardW / 2 - 2, cardCY - cardH / 2 - 2, cardW + 4, cardH + 4, 16);
+
+    this.add.text(width / 2, 348, getMascotByID(MASCOT_ID).name, {
+      fontSize: '22px', fontFamily: 'Poppins, sans-serif', color: '#a30078', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, 388, 'Watch the mascot sequence carefully, then repeat it back!', {
+      fontSize: '14px', fontFamily: 'Poppins, sans-serif', color: '#8ab4f8',
+    }).setOrigin(0.5);
+
+    const enterText = this.add.text(width / 2, 448, '● PRESS ENTER TO START ●', {
+      fontSize: '20px', fontFamily: 'Poppins, sans-serif', color: '#ffc832', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: enterText, alpha: 0.25, duration: 700, ease: 'Sine.InOut', yoyo: true, repeat: -1 });
+
+    this.add.text(width / 2, height - 22, 'Use ENTER to select the highlighted mascot tile', {
+      fontSize: '11px', fontFamily: 'Poppins, sans-serif', color: '#2a2a45',
+    }).setOrigin(0.5);
+
+    this.input.keyboard?.on('keydown-ENTER', () => this.launchGame());
+    this.input.keyboard?.on('keydown-SPACE', () => this.launchGame());
+  }
+
+  private drawBackground(width: number, height: number): void {
+    const g = this.add.graphics();
+    const bands = [
+      { y: 0,   h: 130,        c: 0x06060f },
+      { y: 130, h: 160,        c: 0x0b0b1e },
+      { y: 290, h: height-290, c: 0x101028 },
+    ];
+    for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, width, b.h); }
+    for (let i = 0; i < 110; i++) {
+      const x = Phaser.Math.Between(0, width);
+      const y = Phaser.Math.Between(0, height);
+      g.fillStyle(0xffffff, 0.18 + Math.random() * 0.6);
+      g.fillCircle(x, y, Math.random() < 0.08 ? 2 : Math.random() < 0.25 ? 1.3 : 0.7);
     }
-
-    this.add.text(width / 2, 290,
-      'Watch the mascot sequence carefully.\nRepeat it back correctly to score points!', {
-        fontSize: '16px', fontFamily: 'Poppins, sans-serif', color: '#4b5563',
-        align: 'center', wordWrap: { width: 480 },
-      }).setOrigin(0.5);
-
-    this.add.text(width / 2, 370, 'Select Difficulty:', {
-      fontSize: '16px', fontFamily: 'Poppins, sans-serif', color: '#374151', fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    const difficulties: Difficulty[] = ['easy', 'medium', 'hard'];
-    const diffColors: Record<Difficulty, number> = { easy: 0x43a277, medium: 0xffc832, hard: 0xff4747 };
-
-    difficulties.forEach((diff, i) => {
-      const x = width / 2 + (i - 1) * 140;
-      const btn = this.add.rectangle(x, 420, 120, 44, diffColors[diff]).setInteractive({ cursor: 'pointer' });
-      this.add.text(x, 420, diff.toUpperCase(), {
-        fontSize: '14px', fontFamily: 'Poppins, sans-serif', color: '#ffffff', fontStyle: 'bold',
-      }).setOrigin(0.5);
-      btn.on('pointerup', () => { setDifficulty(diff); this.launchGame(); });
-      btn.on('pointerover', () => btn.setAlpha(0.85));
-      btn.on('pointerout', () => btn.setAlpha(1));
-    });
-
-    const startBtn = this.add.rectangle(width / 2, 510, 220, 50, 0xa30078).setInteractive({ cursor: 'pointer' });
-    this.add.text(width / 2, 510, 'Start Game  →', {
-      fontSize: '18px', fontFamily: 'Poppins, sans-serif', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    startBtn.on('pointerup', () => this.launchGame());
-    this.input.keyboard?.once('keydown-ENTER', () => this.launchGame());
-    void height;
+    g.fillStyle(0xfffce8, 0.88); g.fillCircle(width - 95, 58, 26);
+    g.fillStyle(0x06060f, 1);    g.fillCircle(width - 82, 52, 21);
   }
 
   private launchGame(): void {
+    if (this.hasLaunched) return;
+    this.hasLaunched = true;
+    setDifficulty('medium');
     startGame();
     this.scene.start('GameScene');
   }

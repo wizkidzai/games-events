@@ -1,104 +1,84 @@
 import Phaser from 'phaser';
-import { getState, resetSession } from '../systems/gameState';
+import { getState } from '../systems/gameState';
 
 export class GameOverScene extends Phaser.Scene {
-  constructor() {
-    super({ key: 'GameOverScene' });
-  }
+  constructor() { super({ key: 'GameOverScene' }); }
 
   create(): void {
     const { width, height } = this.scale;
     const state = getState();
-    this.cameras.main.setBackgroundColor('#FAFAFA');
+    const isNewBest = state.gameScore > 0 && state.totalScore > state.cardScorePrevious;
 
-    // Title
-    this.add
-      .text(width / 2, 60, state.isGameOver ? 'Game Over!' : 'You Won!', {
-        fontSize: '42px',
-        fontFamily: 'Poppins, sans-serif',
-        color: '#006464',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    this.cameras.main.setBackgroundColor('#0d0d1a');
+    this.drawBackground(width, height);
 
-    // Scores
-    this.add
-      .text(width / 2, 130, `Game Score: ${state.gameScore} pts`, {
-        fontSize: '24px',
-        fontFamily: 'Poppins, sans-serif',
-        color: '#2D2D2D',
-      })
-      .setOrigin(0.5);
+    const panelW = 560;
+    const panelH = 350;
+    const panelX = width / 2 - panelW / 2;
+    const panelY = height / 2 - panelH / 2 - 20;
 
-    this.add
-      .text(width / 2, 170, `Total Score: ${state.totalScore} pts`, {
-        fontSize: '20px',
-        fontFamily: 'Poppins, sans-serif',
-        color: '#374151',
-      })
-      .setOrigin(0.5);
+    const panelGfx = this.add.graphics();
+    panelGfx.fillStyle(0x111128, 0.88);
+    panelGfx.fillRoundedRect(panelX, panelY, panelW, panelH, 20);
+    panelGfx.lineStyle(1.5, 0x2a2a50, 0.9);
+    panelGfx.strokeRoundedRect(panelX, panelY, panelW, panelH, 20);
 
-    if (state.totalScore > state.cardScorePrevious) {
-      this.add
-        .text(width / 2, 205, '🎉 New Personal Best!', {
-          fontSize: '16px',
-          fontFamily: 'Poppins, sans-serif',
-          color: '#FFC832',
-          fontStyle: 'bold',
-        })
-        .setOrigin(0.5);
+    this.add.text(width / 2, panelY + 48, '♟  PUZZLE COMPLETE', {
+      fontSize: '34px', fontFamily: 'Poppins, sans-serif', color: '#ffc832', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, panelY + 96, `SCORE  ${state.gameScore}`, {
+      fontSize: '30px', fontFamily: 'Poppins, sans-serif', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, panelY + 131, `TOTAL  ${state.totalScore}`, {
+      fontSize: '16px', fontFamily: 'Poppins, sans-serif', color: '#8ab4f8',
+    }).setOrigin(0.5);
+
+    if (isNewBest) {
+      this.add.text(width / 2, panelY + 158, '✦  New Personal Best!  ✦', {
+        fontSize: '14px', fontFamily: 'Poppins, sans-serif', color: '#ffc832', fontStyle: 'bold',
+      }).setOrigin(0.5);
     }
 
-    // Leaderboard
-    this.add
-      .text(width / 2, 250, 'Session Scores:', {
-        fontSize: '16px',
-        fontFamily: 'Poppins, sans-serif',
-        color: '#6b7280',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    const dividerY = isNewBest ? panelY + 178 : panelY + 163;
+    const divGfx = this.add.graphics();
+    divGfx.lineStyle(1, 0x2a2a50, 0.8);
+    divGfx.lineBetween(panelX + 24, dividerY, panelX + panelW - 24, dividerY);
 
+    this.add.text(width / 2, dividerY + 14, 'SESSION LEADERBOARD', {
+      fontSize: '11px', fontFamily: 'Poppins, sans-serif', color: '#40405a', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    const medals = ['🥇', '🥈', '🥉', '4.', '5.'];
     state.leaderboardScores.slice(0, 5).forEach((entry, i) => {
-      this.add
-        .text(
-          width / 2,
-          280 + i * 26,
-          `${i + 1}. ${entry.gameScore} pts  (${entry.difficulty})`,
-          {
-            fontSize: '14px',
-            fontFamily: 'Poppins, sans-serif',
-            color: '#4b5563',
-          }
-        )
-        .setOrigin(0.5);
+      this.add.text(
+        width / 2,
+        dividerY + 34 + i * 26,
+        `${medals[i]}  ${entry.gameScore} pts  •  ${entry.difficulty}`,
+        {
+          fontSize: '13px', fontFamily: 'Poppins, sans-serif',
+          color: i === 0 ? '#ffc832' : '#c0c4d8',
+        }
+      ).setOrigin(0.5);
     });
 
-    // Buttons
-    this.makeButton(width / 2 - 130, height - 80, 'Play Again', () => {
-      this.scene.start('MenuScene');
-    });
+    const prompt = this.add.text(width / 2, height - 48, '● PRESS ENTER FOR NEW GAME ●', {
+      fontSize: '20px', fontFamily: 'Poppins, sans-serif', color: '#ffc832', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: prompt, alpha: 0.22, duration: 700, ease: 'Sine.InOut', yoyo: true, repeat: -1 });
 
-    this.makeButton(width / 2 + 130, height - 80, 'New Card', () => {
-      resetSession();
-      this.scene.start('MenuScene');
-    });
+    this.input.keyboard?.once('keydown-ENTER', () => this.scene.start('MenuScene'));
+    this.input.keyboard?.once('keydown-SPACE', () => this.scene.start('MenuScene'));
   }
 
-  private makeButton(x: number, y: number, label: string, onClick: () => void): void {
-    const btn = this.add
-      .rectangle(x, y, 200, 48, 0x006464)
-      .setInteractive({ cursor: 'pointer' });
-    this.add
-      .text(x, y, label, {
-        fontSize: '16px',
-        fontFamily: 'Poppins, sans-serif',
-        color: '#ffffff',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
-    btn.on('pointerup', onClick);
-    btn.on('pointerover', () => btn.setAlpha(0.85));
-    btn.on('pointerout', () => btn.setAlpha(1));
+  private drawBackground(width: number, height: number): void {
+    const g = this.add.graphics();
+    g.fillStyle(0x080812, 1);
+    g.fillRect(0, 0, width, height);
+    for (let i = 0; i < 70; i++) {
+      g.fillStyle(0xffffff, 0.15 + Math.random() * 0.45);
+      g.fillCircle(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height), Math.random() < 0.15 ? 1.5 : 0.8);
+    }
   }
 }
