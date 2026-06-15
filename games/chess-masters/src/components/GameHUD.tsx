@@ -1,4 +1,4 @@
-import React from 'react';
+
 import type { GameState } from '../systems/types';
 
 interface Props {

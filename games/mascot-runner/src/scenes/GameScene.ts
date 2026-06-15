@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { getState, startRun, addScore, endRun } from '../systems/gameState';
+import { resolveTheme, addThemeToggle } from '../utils/theme';
 
 const GAME_W = 900;
 const GAME_H = 500;
@@ -24,26 +25,13 @@ const DIFF_CONFIG: Record<string, DiffConfig> = {
   hard:   { speed: 400, gravity: 2500, jumpV: -880, spawnMin: 1100, spawnMax: 1900 },
 };
 
-// Collectible heights above ground → varying jump effort required
 const LOGO_HEIGHTS = [
-  { dy: 75,  bonus: 25  },  // low  — single jump
-  { dy: 140, bonus: 50  },  // mid  — needs height
-  { dy: 200, bonus: 100 },  // high — double jump
+  { dy: 75, bonus: 25 }, { dy: 140, bonus: 50 }, { dy: 200, bonus: 100 },
 ];
 
-interface ObstaclePart {
-  gfx: Phaser.GameObjects.Graphics;
-  dx: number; hw: number; hh: number; cy: number;
-}
+interface ObstaclePart { gfx: Phaser.GameObjects.Graphics; dx: number; hw: number; hh: number; cy: number; }
 interface Obstacle { refX: number; parts: ObstaclePart[]; }
-
-interface Collectible {
-  container: Phaser.GameObjects.Container;
-  x: number;
-  baseY: number;
-  bonus: number;
-  collected: boolean;
-}
+interface Collectible { container: Phaser.GameObjects.Container; x: number; baseY: number; bonus: number; collected: boolean; }
 
 function darken(hex: number, f: number): number {
   return ((Math.floor(((hex >> 16) & 0xff) * f) << 16) |
@@ -57,7 +45,8 @@ function lighten(hex: number, a: number): number {
 }
 
 export class GameScene extends Phaser.Scene {
-  // Physics
+  private isDark = true;
+
   private playerY = 0;
   private playerVY = 0;
   private isOnGround = true;
@@ -67,23 +56,19 @@ export class GameScene extends Phaser.Scene {
   private baseSpeed = 300;
   private currentSpeed = 300;
 
-  // Obstacle spawn
   private spawnMin = 1600;
   private spawnMax = 2700;
   private obstacleTimer!: Phaser.Time.TimerEvent;
   private obstacles: Obstacle[] = [];
 
-  // Collectibles
   private collectibles: Collectible[] = [];
   private collectibleTimer!: Phaser.Time.TimerEvent;
 
-  // Score
   private score = 0;
   private scoreAccum = 0;
   private scoreText!: Phaser.GameObjects.Text;
   private hiScoreText!: Phaser.GameObjects.Text;
 
-  // Player
   private playerContainer!: Phaser.GameObjects.Container;
   private legL!: Phaser.GameObjects.Ellipse;
   private legR!: Phaser.GameObjects.Ellipse;
@@ -102,9 +87,9 @@ export class GameScene extends Phaser.Scene {
 
   constructor() { super({ key: 'GameScene' }); }
 
-  // ──────────────────────────────────────────────── create
-
   create(): void {
+    this.isDark = resolveTheme() === 'dark';
+
     const state = getState();
     const mascotID = state.selectedMascotID;
     this.mascotColor = MASCOT_COLORS[mascotID] ?? 0x006464;
@@ -134,13 +119,13 @@ export class GameScene extends Phaser.Scene {
 
     startRun();
 
-    this.cameras.main.setBackgroundColor('#12122a');
+    this.cameras.main.setBackgroundColor(this.isDark ? '#12122a' : '#9dd8f0');
     this.buildBackground();
     this.buildGround();
     this.buildPlayer();
     this.buildHUD();
 
-    // Primary input: Enter key (the big booth button). Space / Up kept for dev.
+    // Primary: Enter (big booth button). Space / Up as dev fallbacks. Pointer for touch.
     this.input.keyboard?.on('keydown-ENTER', () => this.jump());
     this.input.keyboard?.on('keydown-SPACE', () => this.jump());
     this.input.keyboard?.on('keydown-UP', () => this.jump());
@@ -149,37 +134,48 @@ export class GameScene extends Phaser.Scene {
     this.legTimer = this.time.addEvent({ delay: 110, repeat: -1, callback: this.toggleLegs, callbackScope: this });
     this.scheduleNextObstacle();
     this.scheduleNextCollectible();
-  }
 
-  // ──────────────────────────────────────────────── scene build
+    addThemeToggle(this, this.isDark);
+  }
 
   private buildBackground(): void {
     const g = this.add.graphics();
-    const bands = [
-      { y: 0,   h: 100, c: 0x080816 }, { y: 100, h: 120, c: 0x0e0e24 },
-      { y: 220, h: 120, c: 0x131330 }, { y: 340, h: 70,  c: 0x191938 },
-    ];
-    for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, GAME_W, b.h); }
 
-    for (let i = 0; i < 75; i++) {
-      const x = Phaser.Math.Between(0, GAME_W);
-      const y = Phaser.Math.Between(0, GROUND_Y - 40);
-      g.fillStyle(0xffffff, 0.28 + Math.random() * 0.65);
-      g.fillCircle(x, y, Math.random() < 0.1 ? 2 : Math.random() < 0.28 ? 1.3 : 0.7);
+    if (this.isDark) {
+      const bands = [
+        { y: 0, h: 100, c: 0x080816 }, { y: 100, h: 120, c: 0x0e0e24 },
+        { y: 220, h: 120, c: 0x131330 }, { y: 340, h: 70, c: 0x191938 },
+      ];
+      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, GAME_W, b.h); }
+      for (let i = 0; i < 75; i++) {
+        g.fillStyle(0xffffff, 0.28 + Math.random() * 0.65);
+        g.fillCircle(Phaser.Math.Between(0, GAME_W), Phaser.Math.Between(0, GROUND_Y - 40),
+          Math.random() < 0.1 ? 2 : Math.random() < 0.28 ? 1.3 : 0.7);
+      }
+      g.fillStyle(0xfffce8, 0.9); g.fillCircle(GAME_W - 85, 62, 28);
+      g.fillStyle(0x0e0e24, 1);   g.fillCircle(GAME_W - 72, 56, 23);
+      g.fillStyle(0x1a1e52, 0.45); g.fillRect(0, GROUND_Y - 80, GAME_W, 80);
+    } else {
+      const bands = [
+        { y: 0, h: 100, c: 0x87ceeb }, { y: 100, h: 120, c: 0x9dd8f0 },
+        { y: 220, h: 120, c: 0xb8e4f8 }, { y: 340, h: 70, c: 0xcdeeff },
+      ];
+      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, GAME_W, b.h); }
+      g.fillStyle(0xffd700, 0.9);  g.fillCircle(GAME_W - 85, 62, 30);
+      g.fillStyle(0xffe870, 0.45); g.fillCircle(GAME_W - 85, 62, 44);
     }
-    // Moon
-    g.fillStyle(0xfffce8, 0.9); g.fillCircle(GAME_W - 85, 62, 28);
-    g.fillStyle(0x0e0e24, 1);   g.fillCircle(GAME_W - 72, 56, 23);
-    g.fillStyle(0x1a1e52, 0.45); g.fillRect(0, GROUND_Y - 80, GAME_W, 80);
 
+    // Cloud defs
     const defs = [
-      { x: 160, y: 78,  w: 120, r: 0.6, spd: 26 }, { x: 470, y: 50,  w: 85,  r: 0.55, spd: 20 },
-      { x: 740, y: 102, w: 145, r: 0.62, spd: 34 }, { x: 345, y: 148, w: 92,  r: 0.58, spd: 16 },
-      { x: 840, y: 68,  w: 100, r: 0.6,  spd: 29 },
+      { x: 160, y: 78, w: 120, r: 0.6, spd: 26 }, { x: 470, y: 50, w: 85, r: 0.55, spd: 20 },
+      { x: 740, y: 102, w: 145, r: 0.62, spd: 34 }, { x: 345, y: 148, w: 92, r: 0.58, spd: 16 },
+      { x: 840, y: 68, w: 100, r: 0.6, spd: 29 },
     ];
+    const cloudColor = this.isDark ? 0x1c2048 : 0xffffff;
+    const cloudAlpha = this.isDark ? 0.85 : 0.88;
     for (const d of defs) {
       const gfx = this.add.graphics();
-      gfx.fillStyle(0x1c2048, 0.85);
+      gfx.fillStyle(cloudColor, cloudAlpha);
       gfx.fillRoundedRect(0, 0, d.w, 18, 9);
       gfx.fillRoundedRect(d.w * 0.12, -13, d.w * d.r, 16, 8);
       gfx.x = d.x; gfx.y = d.y;
@@ -193,7 +189,6 @@ export class GameScene extends Phaser.Scene {
     g.fillStyle(0x4e9447, 1); g.fillRect(0, GROUND_Y, GAME_W, 14);
     g.fillStyle(0x62b25a, 0.55); g.fillRect(0, GROUND_Y, GAME_W, 4);
     g.fillStyle(0x2e1e10, 1);   g.fillRect(0, GROUND_Y + 14, GAME_W, 5);
-
     for (let i = 0; i < 16; i++) {
       const tick = this.add.graphics();
       tick.fillStyle(0x5a3d2b, 0.45);
@@ -207,55 +202,53 @@ export class GameScene extends Phaser.Scene {
     const bodyColor = darken(this.mascotColor, 0.62);
     const highlight  = lighten(this.mascotColor, 55);
     const g = this.add.graphics();
-
     g.fillStyle(0x000000, 0.22); g.fillEllipse(0, 34, 36, 10);
     g.fillStyle(bodyColor, 1);   g.fillRoundedRect(-13, -4, 26, 28, 9);
     g.fillStyle(highlight, 0.18); g.fillRoundedRect(-7, -1, 9, 14, 4);
     g.fillStyle(this.mascotColor, 1); g.fillCircle(0, -18, 19);
     g.fillStyle(0xffffff, 0.18); g.fillCircle(-7, -26, 8);
-
     const face = this.add.text(0, -18, this.mascotEmoji, { fontSize: '17px' }).setOrigin(0.5);
     this.legL = this.add.ellipse(-7, 31, 11, 18, this.mascotColor);
     this.legR = this.add.ellipse( 7, 31, 11, 18, this.mascotColor);
-
     for (let i = 0; i < MAX_JUMPS; i++) {
-      const dot = this.add.ellipse((i - 1) * 12, 46, 6, 6, 0xffffff, 0.88);
-      this.jumpDots.push(dot);
+      this.jumpDots.push(this.add.ellipse((i - 1) * 12, 46, 6, 6, 0xffffff, 0.88));
     }
-
     this.playerContainer = this.add.container(PLAYER_X, this.playerY);
     this.playerContainer.add([g, this.legL, this.legR, face, ...this.jumpDots]);
   }
 
   private buildHUD(): void {
-    // Score + hi-score panel (top right)
+    const textScore = this.isDark ? '#ffffff' : '#1a1a2e';
+    const textBest  = '#ffc832';
+    const hudAlpha  = this.isDark ? 0.5 : 0.75;
+    const hudColor  = this.isDark ? 0x000000 : 0xffffff;
+    const badgeText = this.isDark ? '#8ab4f8' : '#2a4a80';
+    const hintText  = this.isDark ? '#2a2a45' : '#9090b0';
+
     const panel = this.add.graphics().setDepth(10);
-    panel.fillStyle(0x000000, 0.5);
+    panel.fillStyle(hudColor, hudAlpha);
     panel.fillRoundedRect(GAME_W - 168, 8, 156, 62, 12);
 
-    this.scoreText = this.add
-      .text(GAME_W - 18, 22, 'SCORE: 0', {
-        fontSize: '15px', fontFamily: 'Poppins, sans-serif',
-        color: '#ffffff', fontStyle: 'bold',
-      }).setOrigin(1, 0.5).setDepth(11);
+    this.scoreText = this.add.text(GAME_W - 18, 22, 'SCORE: 0', {
+      fontSize: '15px', fontFamily: 'Poppins, sans-serif', color: textScore, fontStyle: 'bold',
+    }).setOrigin(1, 0.5).setDepth(11);
 
     const prevBest = getState().highScore;
-    this.hiScoreText = this.add
-      .text(GAME_W - 18, 50, `BEST: ${prevBest}`, {
-        fontSize: '13px', fontFamily: 'Poppins, sans-serif',
-        color: '#ffc832',
-      }).setOrigin(1, 0.5).setDepth(11);
+    this.hiScoreText = this.add.text(GAME_W - 18, 50, `BEST: ${prevBest}`, {
+      fontSize: '13px', fontFamily: 'Poppins, sans-serif', color: textBest,
+    }).setOrigin(1, 0.5).setDepth(11);
 
-    // Difficulty badge (top left)
     const badge = this.add.graphics().setDepth(10);
-    badge.fillStyle(0x000000, 0.5);
+    badge.fillStyle(hudColor, hudAlpha);
     badge.fillRoundedRect(9, 8, 90, 36, 10);
     this.add.text(18, 26, this.diffLabel.toUpperCase(), {
-      fontSize: '12px', fontFamily: 'Poppins, sans-serif', color: '#8ab4f8', fontStyle: 'bold',
+      fontSize: '12px', fontFamily: 'Poppins, sans-serif', color: badgeText, fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11);
-  }
 
-  // ──────────────────────────────────────────────── input
+    this.add.text(GAME_W / 2, GAME_H - 14, 'ENTER / TAP to jump  •  3 jumps per run', {
+      fontSize: '11px', fontFamily: 'Poppins, sans-serif', color: hintText, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(10);
+  }
 
   private jump(): void {
     if (this.jumpsUsed < MAX_JUMPS && !this.isOver) {
@@ -282,13 +275,10 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  // ──────────────────────────────────────────────── obstacles
-
   private scheduleNextObstacle(): void {
     const reduction = Math.min(650, Math.floor(this.score / 80) * 42);
     const delay = Phaser.Math.Between(
-      Math.max(650, this.spawnMin - reduction),
-      Math.max(1000, this.spawnMax - reduction)
+      Math.max(650, this.spawnMin - reduction), Math.max(1000, this.spawnMax - reduction)
     );
     this.obstacleTimer = this.time.delayedCall(delay, () => {
       if (!this.isOver) { this.spawnObstacle(); this.scheduleNextObstacle(); }
@@ -301,43 +291,28 @@ export class GameScene extends Phaser.Scene {
     if (this.score >= 300) maxType = 4;
     const type = Phaser.Math.Between(0, maxType);
     const refX = GAME_W + 60;
-
     switch (type) {
-      case 0: { // Short cactus
-        const [w, h] = [26, 58]; const cy = GROUND_Y - h / 2;
-        const gfx = this.trunkGfx(w, h, 0x2d6e1e, 0x3d8a26);
-        gfx.x = refX; gfx.y = cy;
-        this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2, hh: h / 2, cy }] }); break;
-      }
-      case 1: { // Tall armed
-        const [w, h] = [28, 95]; const cy = GROUND_Y - h / 2;
-        const gfx = this.trunkArmedGfx(w, h, 0x2d6e1e, 0x3d8a26);
-        gfx.x = refX; gfx.y = cy;
-        this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2 + 8, hh: h / 2, cy }] }); break;
-      }
-      case 2: { // Double
-        const [w, h1, h2] = [24, 68, 52];
+      case 0: { const [w, h] = [26, 58]; const cy = GROUND_Y - h / 2;
+        const gfx = this.trunkGfx(w, h, 0x2d6e1e, 0x3d8a26); gfx.x = refX; gfx.y = cy;
+        this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2, hh: h / 2, cy }] }); break; }
+      case 1: { const [w, h] = [28, 95]; const cy = GROUND_Y - h / 2;
+        const gfx = this.trunkArmedGfx(w, h, 0x2d6e1e, 0x3d8a26); gfx.x = refX; gfx.y = cy;
+        this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2 + 8, hh: h / 2, cy }] }); break; }
+      case 2: { const [w, h1, h2] = [24, 68, 52];
         const cy1 = GROUND_Y - h1 / 2; const cy2 = GROUND_Y - h2 / 2;
         const g1 = this.trunkGfx(w, h1, 0x2d6e1e, 0x3d8a26);
         const g2 = this.trunkGfx(w, h2, 0x3d8a26, 0x2d6e1e);
         g1.x = refX - 20; g1.y = cy1; g2.x = refX + 20; g2.y = cy2;
         this.obstacles.push({ refX, parts: [
           { gfx: g1, dx: -20, hw: w/2, hh: h1/2, cy: cy1 },
-          { gfx: g2, dx:  20, hw: w/2, hh: h2/2, cy: cy2 },
-        ]}); break;
-      }
-      case 3: { // Giant (double-jump)
-        const [w, h] = [30, 165]; const cy = GROUND_Y - h / 2;
-        const gfx = this.trunkArmedGfx(w, h, 0x1e5214, 0x2d7a1e);
-        gfx.x = refX; gfx.y = cy;
-        this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2 + 10, hh: h / 2, cy }] }); break;
-      }
-      default: { // Mega (triple-jump)
-        const [w, h] = [32, 195]; const cy = GROUND_Y - h / 2;
-        const gfx = this.trunkMultiArmGfx(w, h, 0x1a4a12, 0x28701a);
-        gfx.x = refX; gfx.y = cy;
-        this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2 + 10, hh: h / 2, cy }] }); break;
-      }
+          { gfx: g2, dx: 20, hw: w/2, hh: h2/2, cy: cy2 },
+        ]}); break; }
+      case 3: { const [w, h] = [30, 165]; const cy = GROUND_Y - h / 2;
+        const gfx = this.trunkArmedGfx(w, h, 0x1e5214, 0x2d7a1e); gfx.x = refX; gfx.y = cy;
+        this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2 + 10, hh: h / 2, cy }] }); break; }
+      default: { const [w, h] = [32, 195]; const cy = GROUND_Y - h / 2;
+        const gfx = this.trunkMultiArmGfx(w, h, 0x1a4a12, 0x28701a); gfx.x = refX; gfx.y = cy;
+        this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2 + 10, hh: h / 2, cy }] }); break; }
     }
   }
 
@@ -353,10 +328,9 @@ export class GameScene extends Phaser.Scene {
     const a1y = -h/2 + h * 0.32; const a2y = -h/2 + h * 0.52;
     g.fillStyle(trunk, 1);
     g.fillRoundedRect(-w/2 - 18, a1y, 20, 12, 5); g.fillRoundedRect(-w/2 - 18, a1y - 22, 13, 24, 5);
-    g.fillRoundedRect( w/2 - 2,  a2y, 20, 12, 5); g.fillRoundedRect( w/2 + 6,  a2y - 26, 13, 28, 5);
+    g.fillRoundedRect( w/2 - 2, a2y, 20, 12, 5);  g.fillRoundedRect( w/2 + 6, a2y - 26, 13, 28, 5);
     g.fillStyle(hi, 1);
-    g.fillRoundedRect(-w/2 - 14, a1y - 20, 5, 20, 2);
-    g.fillRoundedRect( w/2 + 10, a2y - 23, 5, 24, 2);
+    g.fillRoundedRect(-w/2 - 14, a1y - 20, 5, 20, 2); g.fillRoundedRect( w/2 + 10, a2y - 23, 5, 24, 2);
     return g;
   }
 
@@ -374,8 +348,6 @@ export class GameScene extends Phaser.Scene {
     return g;
   }
 
-  // ──────────────────────────────────────────────── collectibles
-
   private scheduleNextCollectible(): void {
     const delay = Phaser.Math.Between(4500, 9000);
     this.collectibleTimer = this.time.delayedCall(delay, () => {
@@ -388,7 +360,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnCollectible(x: number, baseY: number, bonus: number): void {
-    // Build display — real logo image if available, golden badge fallback otherwise
     let inner: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
     if (this.textures.exists('wizkidz-logo')) {
       inner = this.add.image(0, 0, 'wizkidz-logo').setDisplaySize(36, 36);
@@ -398,71 +369,30 @@ export class GameScene extends Phaser.Scene {
       g.lineStyle(2.5, 0xe6a800, 1); g.strokeCircle(0, 0, 18);
       inner = g;
     }
-
-    // Glow ring
     const glow = this.add.graphics();
-    glow.lineStyle(4, 0xffc832, 0.35);
-    glow.strokeCircle(0, 0, 22);
-
+    glow.lineStyle(4, 0xffc832, 0.35); glow.strokeCircle(0, 0, 22);
     const container = this.add.container(x, baseY, [glow, inner]);
-
-    // Bobbing tween (y oscillates ±8 px)
-    this.tweens.add({
-      targets: container,
-      y: baseY - 9,
-      duration: 620,
-      ease: 'Sine.InOut',
-      yoyo: true,
-      repeat: -1,
-    });
-
-    // Rotating glow ring
-    this.tweens.add({
-      targets: glow,
-      angle: 360,
-      duration: 2800,
-      repeat: -1,
-    });
-
+    this.tweens.add({ targets: container, y: baseY - 9, duration: 620, ease: 'Sine.InOut', yoyo: true, repeat: -1 });
+    this.tweens.add({ targets: glow, angle: 360, duration: 2800, repeat: -1 });
     this.collectibles.push({ container, x, baseY, bonus, collected: false });
   }
 
   private collectItem(c: Collectible): void {
     c.collected = true;
     this.tweens.killTweensOf(c.container);
-
-    // Burst effect: scale up + fade out
     this.tweens.add({
-      targets: c.container,
-      scaleX: 2.5, scaleY: 2.5, alpha: 0,
-      duration: 380, ease: 'Power2.Out',
+      targets: c.container, scaleX: 2.5, scaleY: 2.5, alpha: 0, duration: 380, ease: 'Power2.Out',
       onComplete: () => { if (c.container.active) c.container.destroy(); },
     });
-
-    // Floating score label
-    const label = this.add
-      .text(c.x, c.baseY - 16, `+${c.bonus}`, {
-        fontSize: '22px', fontFamily: 'Poppins, sans-serif',
-        color: '#ffc832', fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(20);
-
-    this.tweens.add({
-      targets: label,
-      y: label.y - 55, alpha: 0,
-      duration: 850, ease: 'Power2.Out',
-      onComplete: () => label.destroy(),
-    });
-
-    // Update score state
+    const label = this.add.text(c.x, c.baseY - 16, `+${c.bonus}`, {
+      fontSize: '22px', fontFamily: 'Poppins, sans-serif', color: '#ffc832', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(20);
+    this.tweens.add({ targets: label, y: label.y - 55, alpha: 0, duration: 850, ease: 'Power2.Out', onComplete: () => label.destroy() });
     this.score += c.bonus;
     addScore(c.bonus);
     this.scoreText.setText(`SCORE: ${this.score}`);
     this.hiScoreText.setText(`BEST: ${getState().highScore}`);
   }
-
-  // ──────────────────────────────────────────────── collision
 
   private checkCollision(obs: Obstacle): boolean {
     const m = 5;
@@ -475,31 +405,22 @@ export class GameScene extends Phaser.Scene {
     return false;
   }
 
-  // ──────────────────────────────────────────────── game over
-
   private triggerGameOver(): void {
     this.isOver = true;
     this.legTimer?.remove();
     this.obstacleTimer?.remove();
     this.collectibleTimer?.remove();
     endRun();
-
     this.tweens.add({
-      targets: this.playerContainer,
-      alpha: 0, duration: 75, yoyo: true, repeat: 3,
-      onComplete: () => {
-        this.time.delayedCall(300, () => this.scene.start('GameOverScene'));
-      },
+      targets: this.playerContainer, alpha: 0, duration: 75, yoyo: true, repeat: 3,
+      onComplete: () => { this.time.delayedCall(300, () => this.scene.start('GameOverScene')); },
     });
   }
-
-  // ──────────────────────────────────────────────── update
 
   update(_time: number, delta: number): void {
     if (this.isOver) return;
     const dt = delta / 1000;
 
-    // Physics
     this.playerVY += this.gravity * dt;
     this.playerY  += this.playerVY * dt;
     const groundLevel = GROUND_Y - PLAYER_H / 2;
@@ -509,19 +430,14 @@ export class GameScene extends Phaser.Scene {
     } else { this.isOnGround = false; }
     this.playerContainer.setY(this.playerY);
 
-    // Ground ticks scroll
     for (const t of this.groundTicks) {
       t.x -= this.currentSpeed * dt;
       if (t.x < -20) t.x += 58 * 16;
     }
-
-    // Cloud parallax
     for (const c of this.clouds) {
       c.gfx.x -= c.speed * dt;
       if (c.gfx.x + c.totalW < -10) c.gfx.x = GAME_W + 15;
     }
-
-    // Obstacles
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];
       obs.refX -= this.currentSpeed * dt;
@@ -530,24 +446,15 @@ export class GameScene extends Phaser.Scene {
       if (leftEdge < -90) { obs.parts.forEach(p => p.gfx.destroy()); this.obstacles.splice(i, 1); continue; }
       if (this.checkCollision(obs)) { this.triggerGameOver(); return; }
     }
-
-    // Collectibles
     for (let i = this.collectibles.length - 1; i >= 0; i--) {
       const c = this.collectibles[i];
-      if (c.collected) {
-        if (!c.container.active) this.collectibles.splice(i, 1);
-        continue;
-      }
+      if (c.collected) { if (!c.container.active) this.collectibles.splice(i, 1); continue; }
       c.x -= this.currentSpeed * dt;
       c.container.x = c.x;
       if (c.x < -70) { c.container.destroy(); this.collectibles.splice(i, 1); continue; }
-      // Circular proximity check (radius 28 px)
-      if (Math.abs(PLAYER_X - c.x) < 28 && Math.abs(this.playerY - c.baseY) < 28) {
-        this.collectItem(c);
-      }
+      if (Math.abs(PLAYER_X - c.x) < 28 && Math.abs(this.playerY - c.baseY) < 28) this.collectItem(c);
     }
 
-    // Score: +1 pt per 100 ms
     this.scoreAccum += delta;
     if (this.scoreAccum >= 100) {
       const pts = Math.floor(this.scoreAccum / 100);
@@ -556,12 +463,8 @@ export class GameScene extends Phaser.Scene {
       this.scoreText.setText(`SCORE: ${this.score}`);
       this.hiScoreText.setText(`BEST: ${getState().highScore}`);
     }
-
-    // Speed ramp: +8 px/s per 200 score, capped at 3× base
     this.currentSpeed = Math.min(this.baseSpeed * 3, this.baseSpeed + Math.floor(this.score / 200) * 8);
   }
-
-  // ──────────────────────────────────────────────── lifecycle
 
   shutdown(): void {
     this.obstacles = [];

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import type { Difficulty } from '../systems/types';
 
 interface Props {
