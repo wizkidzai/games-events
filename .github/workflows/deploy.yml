@@ -4,36 +4,132 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
+# Only one deployment can run at a time; never cancel a running deploy mid-flight.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Deploy
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
+    name: Build games
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v3
         with:
           version: 8
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - uses: actions/configure-pages@v4
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Build each game — base path must match the deployed sub-directory so
+      # asset URLs resolve correctly at games.wizkidz.ai/<game-name>/.
+      - name: Build mascot-runner
+        run: pnpm --filter mascot-runner run build
+
+      - name: Build chess-masters
+        run: pnpm --filter chess-masters run build
+
+      - name: Build memory-game
+        run: pnpm --filter memory-game run build
+
+      # Assemble one flat directory that GitHub Pages will serve:
+      #   /mascot-runner/   ← games/mascot-runner/dist/
+      #   /chess-masters/   ← games/chess-masters/dist/
+      #   /memory-game/     ← games/memory-game/dist/
+      #   /CNAME            ← tells GitHub Pages which custom domain to serve
+      #   /index.html       ← root landing page
+      - name: Assemble site
+        run: |
+          mkdir -p gh-pages
+          cp -r games/mascot-runner/dist  gh-pages/mascot-runner
+          cp -r games/chess-masters/dist  gh-pages/chess-masters
+          cp -r games/memory-game/dist    gh-pages/memory-game
+
+          echo "games.wizkidz.ai" > gh-pages/CNAME
+
+          cat > gh-pages/index.html << 'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Wiz Kidz Games</title>
+            <style>
+              *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+              body {
+                font-family: 'Segoe UI', sans-serif;
+                background: #0d0d1a;
+                color: #fff;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 2rem;
+                padding: 2rem;
+              }
+              h1 { font-size: 2.2rem; letter-spacing: 0.04em; }
+              .subtitle { color: #ffc832; font-size: 1rem; }
+              .grid { display: flex; flex-wrap: wrap; gap: 1.2rem; justify-content: center; }
+              a {
+                display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+                padding: 1.4rem 2rem;
+                border-radius: 16px;
+                text-decoration: none;
+                font-size: 1.1rem;
+                font-weight: 700;
+                color: #fff;
+                width: 200px;
+                transition: transform 0.15s, box-shadow 0.15s;
+              }
+              a:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+              a .icon { font-size: 2.5rem; }
+              .runner  { background: #006464; }
+              .chess   { background: #1a3a80; }
+              .memory  { background: #6a0060; }
+            </style>
+          </head>
+          <body>
+            <h1>🎮 Wiz Kidz Games</h1>
+            <p class="subtitle">Conference booth games — tap a game to play!</p>
+            <div class="grid">
+              <a href="/mascot-runner/" class="runner">
+                <span class="icon">🏃</span>Mascot Runner
+              </a>
+              <a href="/chess-masters/" class="chess">
+                <span class="icon">♟</span>Chess Masters
+              </a>
+              <a href="/memory-game/" class="memory">
+                <span class="icon">🧠</span>Memory Game
+              </a>
+            </div>
+          </body>
+          </html>
+          HTML
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
-      - uses: actions/deploy-pages@v4
+          path: ./gh-pages
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy
         id: deployment
+        uses: actions/deploy-pages@v4

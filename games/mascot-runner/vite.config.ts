@@ -4,7 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/games/mascot-runner/',
+  base: '/mascot-runner/',
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
   },
