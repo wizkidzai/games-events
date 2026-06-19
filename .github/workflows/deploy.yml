@@ -92,7 +92,7 @@ jobs:
           </head>
           <body>
             <h1>🎮 Wiz Kidz Games</h1>
-            <p class="subtitle">Conference booth games — tap a game to play!</p>
+            <p class="subtitle">Tap a game to play!</p>
             <div class="grid">
               <a href="/mascot-runner/" class="runner">
                 <span class="icon">🏃</span>Mascot Runner
