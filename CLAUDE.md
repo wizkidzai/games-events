@@ -1,8 +1,8 @@
-# CLAUDE.md — Wiz Kidz Conference Booth Games
+# CLAUDE.md — Wiz Kidz Games
 
 ## Project Overview
 
-This is the **Wiz Kidz Conference Booth Games** monorepo. It contains interactive booth games for kids, using RFID cards (NTAG213), React, TypeScript, Phaser 3, and Tailwind CSS.
+This is the **Wiz Kidz Games** monorepo. It contains interactive booth games for kids, using RFID cards (NTAG213), React, TypeScript, Phaser 3, and Tailwind CSS.
 
 ## MANDATORY: Read These Documents First
 
@@ -28,7 +28,6 @@ apps/
   booth-kiosk/          — Main kiosk app (game launcher + main menu)
   admin-card-config/    — Admin tool to configure NTAG213 RFID cards
 games/
-  chess-masters/        — Turn-based puzzle game (mascotID=0, Peacock Pride)
   memory-game/          — Sequence memory game (mascotID=1, Orchid Mantis)
 packages/
   design-system/        — CSS tokens, Tailwind colors, shared UI components

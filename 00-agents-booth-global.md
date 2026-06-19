@@ -1,5 +1,5 @@
 # 00-agents-booth-global.md
-## Universal Standards for Wiz Kidz Conference Booth Games (FINAL)
+## Universal Standards for Wiz Kidz Games (FINAL)
 
 **Purpose:** This document defines universal standards, design system, NTAG213 card architecture, game registry, hardware input standards, and framework baseline for all Wiz Kidz conference booth games. All games inherit these standards and extend them via Layer 01.
 
@@ -317,16 +317,6 @@ No souvenir redemption, no score reset
   "lastUpdated": "2026-06-12",
   "games": [
     {
-      "id": "chess-masters",
-      "name": "Chess Masters",
-      "description": "Solve strategic puzzles",
-      "mascotID": 0,
-      "ageGroups": [1, 2],
-      "difficulty": ["easy", "medium", "hard"],
-      "estimatedPlaytime": 180,
-      "featured": true
-    },
-    {
       "id": "memory-game",
       "name": "Memory Game",
       "description": "Replay the sequence of mascots",
@@ -437,7 +427,6 @@ Card mascot: Peacock Pride (ID=0)
 Selected age groups: [1, 2] (10-16, 16+)
 
 Games for Peacock Pride:
-- Chess Masters (ageGroups: [1, 2]) ✓ SHOW
 - Logic Maze (ageGroups: [1, 2]) ✓ SHOW
 - Intro Puzzle (ageGroups: [0, 1]) ✗ HIDE (doesn't include 16+)
 ```
@@ -468,16 +457,6 @@ wizkidz-conference-games/
 │       ├── package.json
 │       └── README.md
 ├── games/
-│   ├── chess-masters/
-│   │   ├── src/
-│   │   │   ├── scenes/               (Phaser scenes)
-│   │   │   ├── components/           (React components)
-│   │   │   ├── systems/              (game state, card I/O)
-│   │   │   ├── assets/               (images, sprites, audio)
-│   │   │   └── App.jsx               (React entry point)
-│   │   ├── tests/
-│   │   ├── package.json              (per-game dependencies)
-│   │   └── README.md                 (game-specific docs)
 │   ├── memory-game/
 │   └── [game-N]/
 ├── packages/
@@ -523,7 +502,7 @@ wizkidz-conference-games/
 
 ### 5.2 Naming Conventions
 
-**Game Folders:** kebab-case (e.g., `chess-masters`, `memory-game`, `logic-maze`)
+**Game Folders:** kebab-case (e.g., `memory-game`, `mascot-runner`, `logic-maze`)
 
 **React Components:** PascalCase (e.g., `GameBoard.jsx`, `LeaderboardDisplay.jsx`)
 
@@ -774,7 +753,7 @@ Each game is assigned to ONE mascot (immutable):
 
 | Mascot | Color | Personality | Example Games |
 |--------|-------|-------------|---|
-| Peacock Pride | Teal | Inventor | Chess Masters, Logic Maze |
+| Peacock Pride | Teal | Inventor | Logic Maze |
 | Orchid Mantis | Magenta | Coder | Memory Game, Pattern Solver |
 | Red Fox | Red-Orange | Explorer | Rescue Robot, Speed Sprint |
 | Green Frog | Green | Mentor | Nature Quest, Ecosystem Builder |

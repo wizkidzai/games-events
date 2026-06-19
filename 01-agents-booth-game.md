@@ -1,5 +1,5 @@
 # 01-agents-booth-game.md
-## Game-Specific Architecture for Wiz Kidz Conference Booth Games (FINAL - Updated)
+## Game-Specific Architecture for Wiz Kidz Games (FINAL - Updated)
 
 **Purpose:** This document defines the architecture, patterns, and constraints for building individual games. Use this *after* understanding Layer 00 (universal standards).
 
@@ -1122,11 +1122,11 @@ test('Keep top 5 scores sorted', () => {
 
 ```typescript
 test('Complete game flow on medium difficulty', async ({ page }) => {
-  // Load game
-  await page.goto('/games/chess-masters');
+  // Load game — replace with your game's path
+  await page.goto('/games/memory-game');
 
   // MenuScene
-  await expect(page.locator('text=Chess Masters')).toBeVisible();
+  await expect(page.locator('text=Memory Game')).toBeVisible();
   await page.click('button:has-text("Medium")');
   await page.click('button:has-text("Start Game")');
 
@@ -1331,7 +1331,7 @@ Card I/O:
 - Write at end: Update total score
 
 Next: Create game with:
-npm run create-game chess-masters --mascot 0 --ageGroups 1,2
+npm run create-game <game-id> --mascot <0-5> --ageGroups <0,1,2>
 ```
 
 ### 13.3 Implementation Phase

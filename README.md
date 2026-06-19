@@ -1,4 +1,4 @@
-# Wiz Kidz Conference Booth Games
+# Wiz Kidz Games
 
 Interactive booth games for kids, designed to run on a kiosk with a single big button (Enter key). Players use RFID cards (NTAG213) to carry their identity and scores between sessions — no backend, no accounts, no PII.
 
@@ -7,7 +7,6 @@ Interactive booth games for kids, designed to run on a kiosk with a single big b
 | Game | Description | Mascot |
 |------|-------------|--------|
 | **Mascot Runner** | Infinite side-scrolling runner — jump over obstacles, collect Wiz Kidz logos for bonus points, beat your high score | Any mascot |
-| **Chess Masters** | Strategic puzzle game — solve in minimum moves | Peacock Pride |
 | **Memory Game** | Sequence memory challenge — replay the mascot pattern | Orchid Mantis |
 
 ## Stack
@@ -26,7 +25,6 @@ apps/
   admin-card-config/    — Admin tool to configure RFID cards
 games/
   mascot-runner/        — Infinite runner game
-  chess-masters/        — Chess puzzle game
   memory-game/          — Sequence memory game
 packages/
   design-system/        — Shared UI components, Tailwind tokens, CSS
@@ -51,8 +49,8 @@ npm install -g pnpm
 
 ```bash
 # Clone the repo
-git clone https://github.com/wizkidzai/games-events.git
-cd games-events
+git clone https://github.com/wizkidzai/games.git
+cd games
 
 # Install all dependencies
 pnpm install
@@ -73,9 +71,6 @@ Each game starts on its own Vite dev server (ports assigned automatically). Open
 ```bash
 # Mascot Runner game only
 pnpm --filter mascot-runner dev
-
-# Chess Masters game only
-pnpm --filter chess-masters dev
 
 # Memory Game only
 pnpm --filter memory-game dev

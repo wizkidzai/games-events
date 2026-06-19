@@ -42,7 +42,6 @@ jobs:
       - name: Type-check all games
         run: |
           pnpm --filter mascot-runner exec tsc --noEmit
-          pnpm --filter chess-masters exec tsc --noEmit
           pnpm --filter memory-game  exec tsc --noEmit
 
   test:

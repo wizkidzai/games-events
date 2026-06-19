@@ -329,7 +329,6 @@ Next steps:
   2. pnpm install
   3. pnpm dev
   4. Open src/scenes/GameScene.ts to implement your game logic
-  5. See games/chess-masters/ for a reference implementation
 
 Refer to 01-agents-booth-game.md for architecture patterns.
 `);

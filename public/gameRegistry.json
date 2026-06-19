@@ -3,16 +3,6 @@
   "lastUpdated": "2026-06-13",
   "games": [
     {
-      "id": "chess-masters",
-      "name": "Chess Masters",
-      "description": "Solve strategic puzzles in minimum moves",
-      "mascotID": 0,
-      "ageGroups": [1, 2],
-      "difficulty": ["easy", "medium", "hard"],
-      "estimatedPlaytime": 180,
-      "featured": true
-    },
-    {
       "id": "memory-game",
       "name": "Memory Game",
       "description": "Replay the sequence of mascots",
