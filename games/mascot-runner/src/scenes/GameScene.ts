@@ -2,9 +2,6 @@ import Phaser from 'phaser';
 import { getState, startRun, addScore, endRun } from '../systems/gameState';
 import { resolveTheme, addThemeToggle } from '../utils/theme';
 
-const GAME_W = 900;
-const GAME_H = 500;
-const GROUND_Y = 410;
 const PLAYER_X = 120;
 const PLAYER_W = 26;
 const PLAYER_H = 52;
@@ -47,6 +44,11 @@ function lighten(hex: number, a: number): number {
 export class GameScene extends Phaser.Scene {
   private isDark = true;
 
+  // Dynamic layout — computed from actual canvas size in create()
+  private gameW = 900;
+  private gameH = 500;
+  private groundY = 410; // gameH * 0.82
+
   private playerY = 0;
   private playerVY = 0;
   private isOnGround = true;
@@ -78,7 +80,6 @@ export class GameScene extends Phaser.Scene {
 
   private mascotColor = 0x006464;
   private mascotEmoji = '🦚';
-  private diffLabel = 'medium';
 
   private groundTicks: Phaser.GameObjects.Graphics[] = [];
   private clouds: Array<{ gfx: Phaser.GameObjects.Graphics; speed: number; totalW: number }> = [];
@@ -89,12 +90,14 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.isDark = resolveTheme() === 'dark';
+    this.gameW = this.scale.width;
+    this.gameH = this.scale.height;
+    this.groundY = Math.floor(this.gameH * 0.82);
 
     const state = getState();
     const mascotID = state.selectedMascotID;
     this.mascotColor = MASCOT_COLORS[mascotID] ?? 0x006464;
     this.mascotEmoji = MASCOT_EMOJIS[mascotID] ?? '🦚';
-    this.diffLabel = state.difficulty;
 
     const cfg = DIFF_CONFIG[state.difficulty] ?? DIFF_CONFIG.medium;
     this.gravity = cfg.gravity;
@@ -104,7 +107,7 @@ export class GameScene extends Phaser.Scene {
     this.spawnMin = cfg.spawnMin;
     this.spawnMax = cfg.spawnMax;
 
-    this.playerY = GROUND_Y - PLAYER_H / 2;
+    this.playerY = this.groundY - PLAYER_H / 2;
     this.playerVY = 0;
     this.isOnGround = true;
     this.jumpsUsed = 0;
@@ -139,6 +142,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private buildBackground(): void {
+    const { gameW, groundY } = this;
     const g = this.add.graphics();
 
     if (this.isDark) {
@@ -146,23 +150,23 @@ export class GameScene extends Phaser.Scene {
         { y: 0, h: 100, c: 0x080816 }, { y: 100, h: 120, c: 0x0e0e24 },
         { y: 220, h: 120, c: 0x131330 }, { y: 340, h: 70, c: 0x191938 },
       ];
-      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, GAME_W, b.h); }
+      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, gameW, b.h); }
       for (let i = 0; i < 75; i++) {
         g.fillStyle(0xffffff, 0.28 + Math.random() * 0.65);
-        g.fillCircle(Phaser.Math.Between(0, GAME_W), Phaser.Math.Between(0, GROUND_Y - 40),
+        g.fillCircle(Phaser.Math.Between(0, gameW), Phaser.Math.Between(0, groundY - 40),
           Math.random() < 0.1 ? 2 : Math.random() < 0.28 ? 1.3 : 0.7);
       }
-      g.fillStyle(0xfffce8, 0.9); g.fillCircle(GAME_W - 85, 62, 28);
-      g.fillStyle(0x0e0e24, 1);   g.fillCircle(GAME_W - 72, 56, 23);
-      g.fillStyle(0x1a1e52, 0.45); g.fillRect(0, GROUND_Y - 80, GAME_W, 80);
+      g.fillStyle(0xfffce8, 0.9); g.fillCircle(gameW - 85, 62, 28);
+      g.fillStyle(0x0e0e24, 1);   g.fillCircle(gameW - 72, 56, 23);
+      g.fillStyle(0x1a1e52, 0.45); g.fillRect(0, groundY - 80, gameW, 80);
     } else {
       const bands = [
         { y: 0, h: 100, c: 0x87ceeb }, { y: 100, h: 120, c: 0x9dd8f0 },
         { y: 220, h: 120, c: 0xb8e4f8 }, { y: 340, h: 70, c: 0xcdeeff },
       ];
-      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, GAME_W, b.h); }
-      g.fillStyle(0xffd700, 0.9);  g.fillCircle(GAME_W - 85, 62, 30);
-      g.fillStyle(0xffe870, 0.45); g.fillCircle(GAME_W - 85, 62, 44);
+      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, gameW, b.h); }
+      g.fillStyle(0xffd700, 0.9);  g.fillCircle(gameW - 85, 62, 30);
+      g.fillStyle(0xffe870, 0.45); g.fillCircle(gameW - 85, 62, 44);
     }
 
     // Cloud defs
@@ -184,16 +188,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   private buildGround(): void {
+    const { gameW, gameH, groundY } = this;
     const g = this.add.graphics();
-    g.fillStyle(0x3a2518, 1); g.fillRect(0, GROUND_Y + 10, GAME_W, GAME_H - GROUND_Y - 10);
-    g.fillStyle(0x4e9447, 1); g.fillRect(0, GROUND_Y, GAME_W, 14);
-    g.fillStyle(0x62b25a, 0.55); g.fillRect(0, GROUND_Y, GAME_W, 4);
-    g.fillStyle(0x2e1e10, 1);   g.fillRect(0, GROUND_Y + 14, GAME_W, 5);
+    g.fillStyle(0x3a2518, 1); g.fillRect(0, groundY + 10, gameW, gameH - groundY - 10);
+    g.fillStyle(0x4e9447, 1); g.fillRect(0, groundY, gameW, 14);
+    g.fillStyle(0x62b25a, 0.55); g.fillRect(0, groundY, gameW, 4);
+    g.fillStyle(0x2e1e10, 1);   g.fillRect(0, groundY + 14, gameW, 5);
     for (let i = 0; i < 16; i++) {
       const tick = this.add.graphics();
       tick.fillStyle(0x5a3d2b, 0.45);
       tick.fillRoundedRect(-3.5, -2, 7, 4, 2);
-      tick.x = i * 58 + 22; tick.y = GROUND_Y + 24;
+      tick.x = i * 58 + 22; tick.y = groundY + 24;
       this.groundTicks.push(tick);
     }
   }
@@ -222,30 +227,24 @@ export class GameScene extends Phaser.Scene {
     const textBest  = '#ffc832';
     const hudAlpha  = this.isDark ? 0.5 : 0.75;
     const hudColor  = this.isDark ? 0x000000 : 0xffffff;
-    const badgeText = this.isDark ? '#8ab4f8' : '#2a4a80';
+
     const hintText  = this.isDark ? '#2a2a45' : '#9090b0';
 
+    const { gameW, gameH } = this;
     const panel = this.add.graphics().setDepth(10);
     panel.fillStyle(hudColor, hudAlpha);
-    panel.fillRoundedRect(GAME_W - 168, 8, 156, 62, 12);
+    panel.fillRoundedRect(gameW - 168, 8, 156, 62, 12);
 
-    this.scoreText = this.add.text(GAME_W - 18, 22, 'SCORE: 0', {
+    this.scoreText = this.add.text(gameW - 18, 22, 'SCORE: 0', {
       fontSize: '15px', fontFamily: 'Poppins, sans-serif', color: textScore, fontStyle: 'bold',
     }).setOrigin(1, 0.5).setDepth(11);
 
     const prevBest = getState().highScore;
-    this.hiScoreText = this.add.text(GAME_W - 18, 50, `BEST: ${prevBest}`, {
+    this.hiScoreText = this.add.text(gameW - 18, 50, `BEST: ${prevBest}`, {
       fontSize: '13px', fontFamily: 'Poppins, sans-serif', color: textBest,
     }).setOrigin(1, 0.5).setDepth(11);
 
-    const badge = this.add.graphics().setDepth(10);
-    badge.fillStyle(hudColor, hudAlpha);
-    badge.fillRoundedRect(9, 8, 90, 36, 10);
-    this.add.text(18, 26, this.diffLabel.toUpperCase(), {
-      fontSize: '12px', fontFamily: 'Poppins, sans-serif', color: badgeText, fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11);
-
-    this.add.text(GAME_W / 2, GAME_H - 14, 'ENTER / TAP to jump  •  3 jumps per run', {
+    this.add.text(gameW / 2, gameH - 14, 'ENTER / TAP to jump  •  3 jumps per run', {
       fontSize: '11px', fontFamily: 'Poppins, sans-serif', color: hintText, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(10);
   }
@@ -286,20 +285,21 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnObstacle(): void {
+    const { gameW, groundY } = this;
     let maxType = 2;
     if (this.score >= 120) maxType = 3;
     if (this.score >= 300) maxType = 4;
     const type = Phaser.Math.Between(0, maxType);
-    const refX = GAME_W + 60;
+    const refX = gameW + 60;
     switch (type) {
-      case 0: { const [w, h] = [26, 58]; const cy = GROUND_Y - h / 2;
+      case 0: { const [w, h] = [26, 58]; const cy = groundY - h / 2;
         const gfx = this.trunkGfx(w, h, 0x2d6e1e, 0x3d8a26); gfx.x = refX; gfx.y = cy;
         this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2, hh: h / 2, cy }] }); break; }
-      case 1: { const [w, h] = [28, 95]; const cy = GROUND_Y - h / 2;
+      case 1: { const [w, h] = [28, 95]; const cy = groundY - h / 2;
         const gfx = this.trunkArmedGfx(w, h, 0x2d6e1e, 0x3d8a26); gfx.x = refX; gfx.y = cy;
         this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2 + 8, hh: h / 2, cy }] }); break; }
       case 2: { const [w, h1, h2] = [24, 68, 52];
-        const cy1 = GROUND_Y - h1 / 2; const cy2 = GROUND_Y - h2 / 2;
+        const cy1 = groundY - h1 / 2; const cy2 = groundY - h2 / 2;
         const g1 = this.trunkGfx(w, h1, 0x2d6e1e, 0x3d8a26);
         const g2 = this.trunkGfx(w, h2, 0x3d8a26, 0x2d6e1e);
         g1.x = refX - 20; g1.y = cy1; g2.x = refX + 20; g2.y = cy2;
@@ -307,10 +307,10 @@ export class GameScene extends Phaser.Scene {
           { gfx: g1, dx: -20, hw: w/2, hh: h1/2, cy: cy1 },
           { gfx: g2, dx: 20, hw: w/2, hh: h2/2, cy: cy2 },
         ]}); break; }
-      case 3: { const [w, h] = [30, 165]; const cy = GROUND_Y - h / 2;
+      case 3: { const [w, h] = [30, 165]; const cy = groundY - h / 2;
         const gfx = this.trunkArmedGfx(w, h, 0x1e5214, 0x2d7a1e); gfx.x = refX; gfx.y = cy;
         this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2 + 10, hh: h / 2, cy }] }); break; }
-      default: { const [w, h] = [32, 195]; const cy = GROUND_Y - h / 2;
+      default: { const [w, h] = [32, 195]; const cy = groundY - h / 2;
         const gfx = this.trunkMultiArmGfx(w, h, 0x1a4a12, 0x28701a); gfx.x = refX; gfx.y = cy;
         this.obstacles.push({ refX, parts: [{ gfx, dx: 0, hw: w / 2 + 10, hh: h / 2, cy }] }); break; }
     }
@@ -353,7 +353,7 @@ export class GameScene extends Phaser.Scene {
     this.collectibleTimer = this.time.delayedCall(delay, () => {
       if (!this.isOver) {
         const pick = Phaser.Math.RND.pick(LOGO_HEIGHTS);
-        this.spawnCollectible(GAME_W + 40, GROUND_Y - pick.dy, pick.bonus);
+        this.spawnCollectible(this.gameW + 40, this.groundY - pick.dy, pick.bonus);
         this.scheduleNextCollectible();
       }
     });
@@ -361,8 +361,9 @@ export class GameScene extends Phaser.Scene {
 
   private spawnCollectible(x: number, baseY: number, bonus: number): void {
     let inner: Phaser.GameObjects.Image | Phaser.GameObjects.Graphics;
-    if (this.textures.exists('wizkidz-logo')) {
-      inner = this.add.image(0, 0, 'wizkidz-logo').setDisplaySize(36, 36);
+    const symbolKey = resolveTheme() === 'dark' ? 'wizkidz-symbol-white' : 'wizkidz-symbol-teal';
+    if (this.textures.exists(symbolKey)) {
+      inner = this.add.image(0, 0, symbolKey).setDisplaySize(36, 36);
     } else {
       const g = this.add.graphics();
       g.fillStyle(0xffc832, 1); g.fillCircle(0, 0, 18);
@@ -423,7 +424,7 @@ export class GameScene extends Phaser.Scene {
 
     this.playerVY += this.gravity * dt;
     this.playerY  += this.playerVY * dt;
-    const groundLevel = GROUND_Y - PLAYER_H / 2;
+    const groundLevel = this.groundY - PLAYER_H / 2;
     if (this.playerY >= groundLevel) {
       this.playerY = groundLevel; this.playerVY = 0;
       if (!this.isOnGround) { this.jumpsUsed = 0; this.isOnGround = true; this.updateJumpDots(); }
@@ -436,7 +437,7 @@ export class GameScene extends Phaser.Scene {
     }
     for (const c of this.clouds) {
       c.gfx.x -= c.speed * dt;
-      if (c.gfx.x + c.totalW < -10) c.gfx.x = GAME_W + 15;
+      if (c.gfx.x + c.totalW < -10) c.gfx.x = this.gameW + 15;
     }
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];

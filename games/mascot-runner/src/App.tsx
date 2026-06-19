@@ -1,21 +1,18 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { MenuScene } from './scenes/MenuScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
+import { resolveTheme } from './utils/theme';
 
 const GAME_CONFIG: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: 900,
-  height: 500,
   backgroundColor: '#0d0d1a',
   scene: [BootScene, MenuScene, GameScene, GameOverScene],
   scale: {
-    mode: Phaser.Scale.FIT,
+    mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 900,
-    height: 500,
   },
   audio: { noAudio: true },
   antialias: true,
@@ -25,6 +22,7 @@ const GAME_CONFIG: Phaser.Types.Core.GameConfig = {
 export default function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
+  const [theme, setTheme] = useState(() => resolveTheme());
 
   useEffect(() => {
     if (!containerRef.current || gameRef.current) return;
@@ -35,19 +33,28 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const update = () => setTheme(resolveTheme());
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    window.addEventListener('wizkidz-theme-change', update);
+    mq.addEventListener('change', update);
+    return () => {
+      window.removeEventListener('wizkidz-theme-change', update);
+      mq.removeEventListener('change', update);
+    };
+  }, []);
+
+  const base = import.meta.env.BASE_URL;
+  const logoSrc = theme === 'dark' ? `${base}wizkidz-logo-white.png` : `${base}wizkidz-logo-teal.png`;
+  const symbolSrc = theme === 'dark' ? `${base}wizkidz-symbol-white.png` : `${base}wizkidz-symbol-teal.png`;
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: '#0d0d1a',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-      }}
-    >
+    <div style={{ position: 'fixed', inset: 0, background: '#0d0d1a', overflow: 'hidden' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      <picture style={{ position: 'absolute', top: 14, left: 14, zIndex: 20, pointerEvents: 'none' }}>
+        <source media="(max-width: 480px)" srcSet={symbolSrc} />
+        <img src={logoSrc} alt="Wiz Kidz" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
+      </picture>
     </div>
   );
 }

@@ -6,11 +6,6 @@ import { resolveTheme, addThemeToggle } from '../utils/theme';
 const MASCOT_COLORS: number[] = [0x006464, 0xa30078, 0xff4747, 0x43a277, 0xffc832, 0x0aa4eb];
 const MASCOT_EMOJIS: string[] = ['🦚', '🦋', '🦊', '🐸', '🦌', '🐦'];
 
-const CARD_Y = 205;
-const CARD_CENTERS_X = [78, 228, 378, 528, 678, 828];
-const CARD_BASE_W = 95;
-const CARD_BASE_H = 88;
-
 function toHexColor(n: number): string {
   return '#' + n.toString(16).padStart(6, '0');
 }
@@ -25,6 +20,12 @@ export class MenuScene extends Phaser.Scene {
   private hasLaunched = false;
   private isDark = true;
 
+  // Dynamic layout — computed in create() from actual canvas dimensions
+  private cardCentersX: number[] = [];
+  private cardY = 0;
+  private cardW = 0;
+  private cardH = 0;
+
   constructor() { super({ key: 'MenuScene' }); }
 
   create(): void {
@@ -32,42 +33,61 @@ export class MenuScene extends Phaser.Scene {
     this.hasLaunched = false;
     this.isDark = resolveTheme() === 'dark';
 
+    this.computeLayout(width, height);
+
     const textPrimary  = this.isDark ? '#ffffff' : '#1a1a2e';
-    const textMuted    = this.isDark ? '#2a2a45' : '#7090b0';
+    const textMuted    = this.isDark ? '#9090b8' : '#4a6080';
+    const textAccent   = this.isDark ? '#ffc832' : '#c07000';
 
     this.cameras.main.setBackgroundColor(this.isDark ? '#0d0d1a' : '#cce0f8');
     this.drawBackground(width, height);
 
-    this.add.text(width / 2, 46, 'MASCOT RUNNER', {
-      fontSize: '44px', fontFamily: 'Poppins, sans-serif',
-      color: textPrimary, fontStyle: 'bold',
+    // Title — always horizontally centred; Y is proportional to height
+    this.add.text(width / 2, height * 0.09, 'MASCOT RUNNER', {
+      fontSize: `${Math.round(Math.min(44, width * 0.055))}px`,
+      fontFamily: 'Poppins, sans-serif',
+      color: textPrimary,
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, 88, 'Wiz Kidz Conference  ✦  Collect logos · Dodge cacti · Beat your score', {
-      fontSize: '13px', fontFamily: 'Poppins, sans-serif', color: '#ffc832',
+    this.add.text(width / 2, height * 0.17, 'Wiz Kidz Conference  ✦  Collect logos · Dodge cacti · Beat your score', {
+      fontSize: `${Math.round(Math.min(13, width * 0.016))}px`,
+      fontFamily: 'Poppins, sans-serif',
+      color: textAccent,
     }).setOrigin(0.5);
 
     this.mascotCards = [];
     for (let i = 0; i < 6; i++) {
-      this.mascotCards.push(this.buildMascotCard(i, CARD_CENTERS_X[i], CARD_Y));
+      this.mascotCards.push(this.buildMascotCard(i, this.cardCentersX[i], this.cardY));
     }
 
     this.selBorderGfx = this.add.graphics();
 
-    this.emojiText = this.add.text(width / 2, 310, MASCOT_EMOJIS[0], { fontSize: '38px' }).setOrigin(0.5);
-    this.nameText  = this.add.text(width / 2, 352, getMascotByID(0).name, {
-      fontSize: '22px', fontFamily: 'Poppins, sans-serif',
-      color: toHexColor(MASCOT_COLORS[0]), fontStyle: 'bold',
+    this.emojiText = this.add.text(width / 2, height * 0.60, MASCOT_EMOJIS[0], {
+      fontSize: `${Math.round(Math.min(38, height * 0.07))}px`,
+    }).setOrigin(0.5);
+
+    this.nameText = this.add.text(width / 2, height * 0.69, getMascotByID(0).name, {
+      fontSize: `${Math.round(Math.min(22, height * 0.04))}px`,
+      fontFamily: 'Poppins, sans-serif',
+      color: toHexColor(MASCOT_COLORS[0]),
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const promptColor = this.isDark ? '#ffc832' : '#c07000';
-    const enterText = this.add.text(width / 2, 412, '● PRESS ENTER TO START ●', {
-      fontSize: '20px', fontFamily: 'Poppins, sans-serif', color: promptColor, fontStyle: 'bold',
+    const promptFontSize = Math.round(Math.min(20, height * 0.037));
+    const enterText = this.add.text(width / 2, height * 0.79, '● PRESS ENTER TO START ●', {
+      fontSize: `${promptFontSize}px`,
+      fontFamily: 'Poppins, sans-serif',
+      color: promptColor,
+      fontStyle: 'bold',
     }).setOrigin(0.5);
     this.tweens.add({ targets: enterText, alpha: 0.25, duration: 700, ease: 'Sine.InOut', yoyo: true, repeat: -1 });
 
-    this.add.text(width / 2, height - 22, 'Auto-selecting mascot every 1.5s  —  press ENTER any time', {
-      fontSize: '11px', fontFamily: 'Poppins, sans-serif', color: textMuted,
+    this.add.text(width / 2, height - 18, 'Auto-selecting mascot every 1.5s  —  press ENTER any time', {
+      fontSize: `${Math.round(Math.min(11, width * 0.014))}px`,
+      fontFamily: 'Poppins, sans-serif',
+      color: textMuted,
     }).setOrigin(0.5);
 
     this.applySelection(0);
@@ -80,18 +100,42 @@ export class MenuScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ENTER', () => this.launchGame());
     this.input.keyboard?.on('keydown-SPACE', () => this.launchGame());
 
+    // Rebuild the scene when the canvas is resized so layout stays correct
+    this.scale.once('resize', () => { if (!this.hasLaunched) this.scene.restart(); }, this);
+
     addThemeToggle(this, this.isDark);
+  }
+
+  private computeLayout(width: number, height: number): void {
+    const colWidth = width / 6;
+    this.cardCentersX = Array.from({ length: 6 }, (_, i) => colWidth * (i + 0.5));
+    this.cardY = height * 0.40;
+    // Keep cards proportional to the column they sit in, with a comfortable ceiling
+    this.cardW = Math.min(colWidth * 0.82, 110);
+    this.cardH = this.cardW * 0.92;
   }
 
   private buildMascotCard(mascotID: number, cx: number, cy: number): Phaser.GameObjects.Container {
     const color = MASCOT_COLORS[mascotID];
+    const hw = this.cardW / 2;
+    const hh = this.cardH / 2;
+    const radius = Math.round(this.cardW * 0.14);
+
     const gfx = this.add.graphics();
     gfx.fillStyle(color, 0.72);
-    gfx.fillRoundedRect(-CARD_BASE_W / 2, -CARD_BASE_H / 2, CARD_BASE_W, CARD_BASE_H, 14);
+    gfx.fillRoundedRect(-hw, -hh, this.cardW, this.cardH, radius);
 
-    const emojiLabel = this.add.text(0, -12, MASCOT_EMOJIS[mascotID], { fontSize: '28px' }).setOrigin(0.5);
-    const nameLabel  = this.add.text(0, 28, getMascotByID(mascotID).name.split(' ')[0], {
-      fontSize: '10px', fontFamily: 'Poppins, sans-serif', color: '#ffffff', fontStyle: 'bold',
+    const emojiFontSize = Math.round(this.cardW * 0.28);
+    const emojiLabel = this.add.text(0, -hh * 0.28, MASCOT_EMOJIS[mascotID], {
+      fontSize: `${emojiFontSize}px`,
+    }).setOrigin(0.5);
+
+    const nameFontSize = Math.round(this.cardW * 0.115);
+    const nameLabel = this.add.text(0, hh * 0.6, getMascotByID(mascotID).name.split(' ')[0], {
+      fontSize: `${nameFontSize}px`,
+      fontFamily: 'Poppins, sans-serif',
+      color: '#ffffff',
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
     return this.add.container(cx, cy, [gfx, emojiLabel, nameLabel]);
@@ -105,16 +149,19 @@ export class MenuScene extends Phaser.Scene {
       });
     });
 
-    const cx = CARD_CENTERS_X[id];
+    const cx = this.cardCentersX[id];
+    const hw = this.cardW / 2 + 8;
+    const hh = this.cardH / 2 + 8;
     const outerColor = this.isDark ? 0xffffff : 0x1a3a80;
     const outerAlpha = this.isDark ? 0.14 : 0.2;
     const innerColor = this.isDark ? 0xffffff : 0x1a3a80;
+    const r = Math.round(this.cardW * 0.17);
 
     this.selBorderGfx.clear();
     this.selBorderGfx.lineStyle(6, outerColor, outerAlpha);
-    this.selBorderGfx.strokeRoundedRect(cx - 60, CARD_Y - 55, 120, 110, 17);
+    this.selBorderGfx.strokeRoundedRect(cx - hw, this.cardY - hh, hw * 2, hh * 2, r + 2);
     this.selBorderGfx.lineStyle(2.5, innerColor, 0.95);
-    this.selBorderGfx.strokeRoundedRect(cx - 57, CARD_Y - 52, 114, 104, 15);
+    this.selBorderGfx.strokeRoundedRect(cx - hw + 3, this.cardY - hh + 3, (hw - 3) * 2, (hh - 3) * 2, r);
 
     this.emojiText.setText(MASCOT_EMOJIS[id]);
     this.nameText.setText(getMascotByID(id).name);
@@ -125,26 +172,35 @@ export class MenuScene extends Phaser.Scene {
     const g = this.add.graphics();
 
     if (this.isDark) {
+      const split1 = height * 0.28;
+      const split2 = height * 0.60;
       const bands = [
-        { y: 0, h: 130, c: 0x06060f }, { y: 130, h: 160, c: 0x0b0b1e }, { y: 290, h: height - 290, c: 0x101028 },
+        { y: 0,      h: split1,           c: 0x06060f },
+        { y: split1, h: split2 - split1,  c: 0x0b0b1e },
+        { y: split2, h: height - split2,  c: 0x101028 },
       ];
       for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, width, b.h); }
       for (let i = 0; i < 110; i++) {
         g.fillStyle(0xffffff, 0.18 + Math.random() * 0.6);
-        g.fillCircle(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height),
-          Math.random() < 0.08 ? 2 : Math.random() < 0.25 ? 1.3 : 0.7);
+        g.fillCircle(
+          Phaser.Math.Between(0, width),
+          Phaser.Math.Between(0, height),
+          Math.random() < 0.08 ? 2 : Math.random() < 0.25 ? 1.3 : 0.7,
+        );
       }
       g.fillStyle(0xfffce8, 0.88); g.fillCircle(width - 95, 58, 26);
       g.fillStyle(0x06060f, 1);    g.fillCircle(width - 82, 52, 21);
     } else {
+      const split1 = height * 0.28;
+      const split2 = height * 0.60;
       const bands = [
-        { y: 0, h: 130, c: 0xb8d4f0 }, { y: 130, h: 160, c: 0xcce0f8 }, { y: 290, h: height - 290, c: 0xdce8ff },
+        { y: 0,      h: split1,           c: 0xb8d4f0 },
+        { y: split1, h: split2 - split1,  c: 0xcce0f8 },
+        { y: split2, h: height - split2,  c: 0xdce8ff },
       ];
       for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, width, b.h); }
-      // Sun
       g.fillStyle(0xffd700, 0.9); g.fillCircle(width - 95, 58, 30);
       g.fillStyle(0xffe870, 0.4); g.fillCircle(width - 95, 58, 44);
-      // Clouds
       g.fillStyle(0xffffff, 0.85);
       [[90, 32, 110, 22], [175, 22, 72, 18], [340, 55, 130, 24], [435, 44, 80, 20], [610, 28, 115, 22]].forEach(
         ([x, y, w, h]) => { g.fillRoundedRect(x, y, w, h, 11); g.fillRoundedRect(x + w * 0.12, y - 12, w * 0.6, h - 4, 9); }

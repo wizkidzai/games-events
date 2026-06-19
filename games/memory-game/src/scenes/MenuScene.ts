@@ -1,11 +1,10 @@
 import Phaser from 'phaser';
-import { getMascotByID } from '@wizkidz/mascot-system';
 import { setDifficulty, startGame } from '../systems/gameState';
 import { resolveTheme, addThemeToggle } from '../utils/theme';
 
-const MASCOT_ID    = 1;
-const MASCOT_COLOR = 0xa30078;
-const MASCOT_EMOJI = '🦋';
+const MASCOT_EMOJIS  = ['🦚', '🦋', '🦊', '🐸', '🦌', '🐦'];
+const MASCOT_COLORS  = [0x006464, 0xa30078, 0xff4747, 0x43a277, 0xffc832, 0x0aa4eb];
+const MASCOT_NAMES   = ['Peacock', 'Mantis', 'Fox', 'Frog', 'Fawn', 'Jay'];
 
 export class MenuScene extends Phaser.Scene {
   private hasLaunched = false;
@@ -33,33 +32,35 @@ export class MenuScene extends Phaser.Scene {
       fontSize: '13px', fontFamily: 'Poppins, sans-serif', color: '#ffc832',
     }).setOrigin(0.5);
 
-    const cardCX = width / 2, cardCY = 256, cardW = 130, cardH = 120;
-    const cardGfx = this.add.graphics();
-    cardGfx.fillStyle(MASCOT_COLOR, 0.72);
-    cardGfx.fillRoundedRect(cardCX - cardW / 2, cardCY - cardH / 2, cardW, cardH, 14);
+    // Preview row — all 6 mascot tiles (these are the actual game tiles)
+    const cardW = 90, cardH = 82, gap = 14;
+    const rowW  = 6 * cardW + 5 * gap;
+    const rowX  = width / 2 - rowW / 2;
+    const rowY  = 175;
 
-    this.add.text(cardCX, cardCY - 16, MASCOT_EMOJI, { fontSize: '40px' }).setOrigin(0.5);
-    this.add.text(cardCX, cardCY + 30, getMascotByID(MASCOT_ID).name.split(' ')[0], {
-      fontSize: '12px', fontFamily: 'Poppins, sans-serif', color: '#ffffff', fontStyle: 'bold',
+    for (let i = 0; i < 6; i++) {
+      const cx = rowX + i * (cardW + gap) + cardW / 2;
+      const cy = rowY + cardH / 2;
+
+      const gfx = this.add.graphics();
+      gfx.fillStyle(MASCOT_COLORS[i], isDark ? 0.72 : 0.65);
+      gfx.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 12);
+
+      this.add.text(cx, cy - 10, MASCOT_EMOJIS[i], { fontSize: '28px' }).setOrigin(0.5);
+      this.add.text(cx, cy + 26, MASCOT_NAMES[i], {
+        fontSize: '10px', fontFamily: 'Poppins, sans-serif', color: '#ffffff', fontStyle: 'bold',
+      }).setOrigin(0.5);
+    }
+
+    this.add.text(width / 2, rowY + cardH + 16, 'Memorize sequences of these 6 mascot tiles', {
+      fontSize: '13px', fontFamily: 'Poppins, sans-serif', color: textSecondary,
     }).setOrigin(0.5);
 
-    const outerColor = isDark ? 0xffffff : 0x6a1060;
-    const outerAlpha = isDark ? 0.14 : 0.2;
-    const borderGfx = this.add.graphics();
-    borderGfx.lineStyle(6, outerColor, outerAlpha);
-    borderGfx.strokeRoundedRect(cardCX - cardW / 2 - 5, cardCY - cardH / 2 - 5, cardW + 10, cardH + 10, 18);
-    borderGfx.lineStyle(2.5, isDark ? 0xffffff : 0x6a1060, 0.95);
-    borderGfx.strokeRoundedRect(cardCX - cardW / 2 - 2, cardCY - cardH / 2 - 2, cardW + 4, cardH + 4, 16);
-
-    this.add.text(width / 2, 348, getMascotByID(MASCOT_ID).name, {
-      fontSize: '22px', fontFamily: 'Poppins, sans-serif', color: '#a30078', fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    this.add.text(width / 2, 388, 'Use ← → to navigate tiles · ENTER to select · Beat your score!', {
+    this.add.text(width / 2, 348, 'Use ← → to navigate tiles · ENTER to select · Beat your score!', {
       fontSize: '14px', fontFamily: 'Poppins, sans-serif', color: textSecondary,
     }).setOrigin(0.5);
 
-    const enterText = this.add.text(width / 2, 448, '● PRESS ENTER TO START ●', {
+    const enterText = this.add.text(width / 2, 408, '● PRESS ENTER TO START ●', {
       fontSize: '20px', fontFamily: 'Poppins, sans-serif', color: promptColor, fontStyle: 'bold',
     }).setOrigin(0.5);
     this.tweens.add({ targets: enterText, alpha: 0.25, duration: 700, ease: 'Sine.InOut', yoyo: true, repeat: -1 });

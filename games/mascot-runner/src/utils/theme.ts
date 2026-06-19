@@ -10,6 +10,7 @@ export function getThemeMode(): ThemeMode {
 }
 export function setThemeMode(m: ThemeMode): void {
   try { localStorage.setItem(STORAGE_KEY, m); } catch { /**/ }
+  window.dispatchEvent(new CustomEvent('wizkidz-theme-change'));
 }
 export function cycleTheme(): ThemeMode {
   const order: ThemeMode[] = ['light', 'dark', 'system'];

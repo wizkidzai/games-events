@@ -35,7 +35,9 @@ export function addPoints(points: number): void {
 }
 
 export function nextRound(): void {
-  setState({ currentRound: state.currentRound + 1 });
+  const sequenceLength = { easy: 3, medium: 5, hard: 7 }[state.difficulty];
+  const sequence = Array.from({ length: sequenceLength }, () => Math.floor(Math.random() * 6));
+  setState({ currentRound: state.currentRound + 1, sequence });
 }
 
 export function setMascotState(animation: MascotAnimation, dialogue: string): void {

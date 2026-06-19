@@ -2,9 +2,6 @@ import Phaser from 'phaser';
 import { addPoints, endGame, getState, nextRound } from '../systems/gameState';
 import { resolveTheme, addThemeToggle } from '../utils/theme';
 
-const GAME_W = 900;
-const GAME_H = 600;
-
 const MASCOT_TILES = ['🦚', '🦋', '🦊', '🐸', '🦌', '🐦'];
 const TILE_COLORS  = [0x006464, 0xa30078, 0xff4747, 0x43a277, 0xffc832, 0x0aa4eb];
 const TILE_NAMES   = ['Peacock', 'Mantis', 'Fox', 'Frog', 'Fawn', 'Blue Jay'];
@@ -14,13 +11,17 @@ const TILE_H  = 130;
 const GAP_X   = 18;
 const GAP_Y   = 18;
 const GRID_W  = 3 * TILE_W + 2 * GAP_X; // 426
-const GRID_L  = (GAME_W - GRID_W) / 2;  // 237
 const GRID_T  = 148;
 
 type Phase = 'watching' | 'inputting' | 'feedback';
 
 export class GameScene extends Phaser.Scene {
   private isDark = true;
+
+  // Dynamic layout — computed from actual canvas size in create()
+  private gameW = 900;
+  private gameH = 600;
+  private gridL = 237; // (gameW - GRID_W) / 2
 
   private tileGfx: Phaser.GameObjects.Graphics[] = [];
   private tileBorderGfx: Phaser.GameObjects.Graphics[] = [];
@@ -37,12 +38,15 @@ export class GameScene extends Phaser.Scene {
 
   constructor() { super({ key: 'GameScene' }); }
 
-  private tileCX(i: number): number { return GRID_L + (i % 3) * (TILE_W + GAP_X) + TILE_W / 2; }
+  private tileCX(i: number): number { return this.gridL + (i % 3) * (TILE_W + GAP_X) + TILE_W / 2; }
   private tileCY(i: number): number { return GRID_T + Math.floor(i / 3) * (TILE_H + GAP_Y) + TILE_H / 2; }
   private get dimAlpha(): number { return this.isDark ? 0.28 : 0.20; }
 
   create(): void {
     this.isDark = resolveTheme() === 'dark';
+    this.gameW = this.scale.width;
+    this.gameH = this.scale.height;
+    this.gridL = (this.gameW - GRID_W) / 2;
 
     this.tileGfx = [];
     this.tileBorderGfx = [];
@@ -72,29 +76,30 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawBackground(): void {
+    const { gameW, gameH, isDark } = this;
     const g = this.add.graphics();
-    if (this.isDark) {
+    if (isDark) {
       const bands = [
-        { y: 0,   h: 80,          c: 0x08081a },
-        { y: 80,  h: 440,         c: 0x0d0d24 },
-        { y: 520, h: GAME_H - 520, c: 0x080818 },
+        { y: 0,   h: 80,           c: 0x08081a },
+        { y: 80,  h: 440,          c: 0x0d0d24 },
+        { y: 520, h: gameH - 520,  c: 0x080818 },
       ];
-      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, GAME_W, b.h); }
+      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, gameW, b.h); }
       for (let i = 0; i < 55; i++) {
         g.fillStyle(0xffffff, 0.10 + Math.random() * 0.28);
-        g.fillCircle(Phaser.Math.Between(0, GAME_W), Phaser.Math.Between(0, 72), Math.random() < 0.15 ? 1.4 : 0.7);
+        g.fillCircle(Phaser.Math.Between(0, gameW), Phaser.Math.Between(0, 72), Math.random() < 0.15 ? 1.4 : 0.7);
       }
-      g.fillStyle(0xfffce8, 0.82); g.fillCircle(GAME_W - 70, 36, 20);
-      g.fillStyle(0x08081a, 1);    g.fillCircle(GAME_W - 60, 31, 16);
+      g.fillStyle(0xfffce8, 0.82); g.fillCircle(gameW - 70, 36, 20);
+      g.fillStyle(0x08081a, 1);    g.fillCircle(gameW - 60, 31, 16);
     } else {
       const bands = [
-        { y: 0,   h: 80,          c: 0xb8d4f0 },
-        { y: 80,  h: 440,         c: 0xcce0f8 },
-        { y: 520, h: GAME_H - 520, c: 0xdce8ff },
+        { y: 0,   h: 80,           c: 0xb8d4f0 },
+        { y: 80,  h: 440,          c: 0xcce0f8 },
+        { y: 520, h: gameH - 520,  c: 0xdce8ff },
       ];
-      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, GAME_W, b.h); }
-      g.fillStyle(0xffd700, 0.85); g.fillCircle(GAME_W - 70, 36, 22);
-      g.fillStyle(0xffe870, 0.4);  g.fillCircle(GAME_W - 70, 36, 33);
+      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, gameW, b.h); }
+      g.fillStyle(0xffd700, 0.85); g.fillCircle(gameW - 70, 36, 22);
+      g.fillStyle(0xffe870, 0.4);  g.fillCircle(gameW - 70, 36, 33);
       g.fillStyle(0xffffff, 0.75);
       [[80, 16, 90, 18], [270, 28, 110, 20]].forEach(
         ([x, y, w, h]) => { g.fillRoundedRect(x, y, w, h, 9); g.fillRoundedRect(x + w * 0.12, y - 10, w * 0.6, h - 4, 8); }
@@ -126,68 +131,64 @@ export class GameScene extends Phaser.Scene {
   }
 
   private buildHUD(): void {
+    const { gameW } = this;
     const state     = getState();
     const textScore = this.isDark ? '#ffffff' : '#1a1a2e';
     const textRound = this.isDark ? '#ffc832' : '#c07000';
-    const badgeText = this.isDark ? '#8ab4f8' : '#2a4a80';
     const hudColor  = this.isDark ? 0x000000 : 0xffffff;
     const hudAlpha  = this.isDark ? 0.5 : 0.78;
 
     const panel = this.add.graphics().setDepth(10);
     panel.fillStyle(hudColor, hudAlpha);
-    panel.fillRoundedRect(GAME_W - 168, 8, 156, 68, 12);
+    panel.fillRoundedRect(gameW - 168, 8, 156, 68, 12);
 
-    this.scoreText = this.add.text(GAME_W - 18, 26, `SCORE: ${state.gameScore}`, {
+    this.scoreText = this.add.text(gameW - 18, 26, `SCORE: ${state.gameScore}`, {
       fontSize: '15px', fontFamily: 'Poppins, sans-serif', color: textScore, fontStyle: 'bold',
     }).setOrigin(1, 0.5).setDepth(11);
 
-    this.roundText = this.add.text(GAME_W - 18, 56, 'ROUND: 1 / 3', {
+    this.roundText = this.add.text(gameW - 18, 56, 'ROUND: 1', {
       fontSize: '13px', fontFamily: 'Poppins, sans-serif', color: textRound,
     }).setOrigin(1, 0.5).setDepth(11);
-
-    const badge = this.add.graphics().setDepth(10);
-    badge.fillStyle(hudColor, hudAlpha);
-    badge.fillRoundedRect(9, 8, 90, 36, 10);
-    this.add.text(18, 26, 'MEDIUM', {
-      fontSize: '12px', fontFamily: 'Poppins, sans-serif', color: badgeText, fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setDepth(11);
   }
 
   private buildPhaseLabel(): void {
+    const { gameW } = this;
     const phaseBg = this.isDark ? 0x000000 : 0xffffff;
     const bg = this.add.graphics().setDepth(9);
     bg.fillStyle(phaseBg, this.isDark ? 0.45 : 0.72);
-    bg.fillRoundedRect(GAME_W / 2 - 160, 92, 320, 40, 10);
+    bg.fillRoundedRect(gameW / 2 - 160, 92, 320, 40, 10);
 
-    this.phaseText = this.add.text(GAME_W / 2, 112, '👀  WATCH THE SEQUENCE', {
+    this.phaseText = this.add.text(gameW / 2, 112, '👀  WATCH THE SEQUENCE', {
       fontSize: '16px', fontFamily: 'Poppins, sans-serif',
       color: this.isDark ? '#8ab4f8' : '#2a4a80', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(10);
   }
 
   private buildProgressDots(): void {
+    const { gameW, gameH } = this;
     const seq = getState().sequence;
     const total = seq.length;
     const spacing = 20;
-    const startX = GAME_W / 2 - ((total - 1) * spacing) / 2;
+    const startX = gameW / 2 - ((total - 1) * spacing) / 2;
     const emptyColor = this.isDark ? 0x303060 : 0xb0c8e8;
     for (let i = 0; i < total; i++) {
       const dot = this.add.graphics().setDepth(10);
       dot.fillStyle(emptyColor, 1);
-      dot.fillCircle(startX + i * spacing, GAME_H - 28, 6);
+      dot.fillCircle(startX + i * spacing, gameH - 28, 6);
       this.progressDots.push(dot);
     }
   }
 
   private updateProgressDots(filled: number): void {
+    const { gameW, gameH } = this;
     const seq = getState().sequence;
     const spacing = 20;
-    const startX = GAME_W / 2 - ((seq.length - 1) * spacing) / 2;
+    const startX = gameW / 2 - ((seq.length - 1) * spacing) / 2;
     const emptyColor = this.isDark ? 0x303060 : 0xb0c8e8;
     this.progressDots.forEach((dot, i) => {
       dot.clear();
       dot.fillStyle(i < filled ? 0xa30078 : emptyColor, 1);
-      dot.fillCircle(startX + i * spacing, GAME_H - 28, 6);
+      dot.fillCircle(startX + i * spacing, gameH - 28, 6);
     });
   }
 
@@ -309,14 +310,12 @@ export class GameScene extends Phaser.Scene {
       nextRound();
       const newState = getState();
       this.time.delayedCall(1000, () => {
-        if (newState.currentRound >= 3) {
-          endGame(true);
-          this.scene.start('GameOverScene');
-        } else {
-          this.roundText.setText(`ROUND: ${newState.currentRound + 1} / 3`);
-          this.updateProgressDots(0);
-          this.playSequence();
-        }
+        this.roundText.setText(`ROUND: ${newState.currentRound + 1}`);
+        this.progressDots.forEach(d => d.destroy());
+        this.progressDots = [];
+        this.buildProgressDots();
+        this.updateProgressDots(0);
+        this.playSequence();
       });
     } else {
       // More tiles to select — re-enter input phase with cursor at same position
