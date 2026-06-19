@@ -30,7 +30,7 @@ export class MenuScene extends Phaser.Scene {
       fontFamily: 'Poppins, sans-serif', color: textPrimary, fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.17, 'Wiz Kidz Conference  ✦  Watch the sequence · Navigate · Press Enter', {
+    this.add.text(width / 2, height * 0.17, 'Wiz Kidz  ✦  Watch the sequence · Navigate · Press Enter', {
       fontSize: `${Math.round(Math.min(13, width * 0.016))}px`,
       fontFamily: 'Poppins, sans-serif', color: textAccent,
     }).setOrigin(0.5);
