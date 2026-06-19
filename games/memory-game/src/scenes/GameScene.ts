@@ -6,22 +6,20 @@ const MASCOT_TILES = ['🦚', '🦋', '🦊', '🐸', '🦌', '🐦'];
 const TILE_COLORS  = [0x006464, 0xa30078, 0xff4747, 0x43a277, 0xffc832, 0x0aa4eb];
 const TILE_NAMES   = ['Peacock', 'Mantis', 'Fox', 'Frog', 'Fawn', 'Blue Jay'];
 
-const TILE_W  = 130;
-const TILE_H  = 130;
-const GAP_X   = 18;
-const GAP_Y   = 18;
-const GRID_W  = 3 * TILE_W + 2 * GAP_X; // 426
-const GRID_T  = 148;
-
 type Phase = 'watching' | 'inputting' | 'feedback';
 
 export class GameScene extends Phaser.Scene {
   private isDark = true;
 
-  // Dynamic layout — computed from actual canvas size in create()
+  // Dynamic layout — computed from canvas size in create()
   private gameW = 900;
   private gameH = 600;
-  private gridL = 237; // (gameW - GRID_W) / 2
+  private tileW = 130;
+  private tileH = 130;
+  private gapX  = 18;
+  private gapY  = 18;
+  private gridL = 237;
+  private gridT = 148;
 
   private tileGfx: Phaser.GameObjects.Graphics[] = [];
   private tileBorderGfx: Phaser.GameObjects.Graphics[] = [];
@@ -38,23 +36,24 @@ export class GameScene extends Phaser.Scene {
 
   constructor() { super({ key: 'GameScene' }); }
 
-  private tileCX(i: number): number { return this.gridL + (i % 3) * (TILE_W + GAP_X) + TILE_W / 2; }
-  private tileCY(i: number): number { return GRID_T + Math.floor(i / 3) * (TILE_H + GAP_Y) + TILE_H / 2; }
+  private tileCX(i: number): number { return this.gridL + (i % 3) * (this.tileW + this.gapX) + this.tileW / 2; }
+  private tileCY(i: number): number { return this.gridT + Math.floor(i / 3) * (this.tileH + this.gapY) + this.tileH / 2; }
   private get dimAlpha(): number { return this.isDark ? 0.28 : 0.20; }
+  private get tileRadius(): number { return Math.round(this.tileW * 0.12); }
 
   create(): void {
     this.isDark = resolveTheme() === 'dark';
-    this.gameW = this.scale.width;
-    this.gameH = this.scale.height;
-    this.gridL = (this.gameW - GRID_W) / 2;
+    this.gameW  = this.scale.width;
+    this.gameH  = this.scale.height;
+    this.computeLayout();
 
-    this.tileGfx = [];
+    this.tileGfx       = [];
     this.tileBorderGfx = [];
-    this.tileLabels = [];
-    this.progressDots = [];
-    this.playerPos = 0;
-    this.cursorIdx = 0;
-    this.phase = 'watching';
+    this.tileLabels    = [];
+    this.progressDots  = [];
+    this.playerPos     = 0;
+    this.cursorIdx     = 0;
+    this.phase         = 'watching';
 
     this.cameras.main.setBackgroundColor(this.isDark ? '#12122a' : '#cce0f8');
     this.drawBackground();
@@ -63,41 +62,62 @@ export class GameScene extends Phaser.Scene {
     this.buildProgressDots();
     this.buildPhaseLabel();
 
-    // Primary: 3x big buttons — Left, Right, Enter
     this.input.keyboard?.on('keydown-LEFT',  () => this.moveCursor(-1));
     this.input.keyboard?.on('keydown-RIGHT', () => this.moveCursor(1));
     this.input.keyboard?.on('keydown-ENTER', () => this.onEnter());
-    // Fallback: keyboard (same keys) — already handled above
     this.input.keyboard?.once('keydown-ESC', () => this.scene.start('MenuScene'));
 
     this.time.delayedCall(500, () => this.playSequence());
 
+    this.scale.once('resize', () => this.scene.restart(), this);
+
     addThemeToggle(this, this.isDark);
+  }
+
+  private computeLayout(): void {
+    const { gameW, gameH } = this;
+    // Available area: leave HUD (top ~90px) + phase banner (~50px) + progress dots (~50px)
+    const availW = gameW - 40;
+    const availH = gameH - 210;
+    // Square tiles: fit 3 cols × 2 rows
+    const maxByW = Math.floor((availW - 2 * 14) / 3);
+    const maxByH = Math.floor((availH - 14) / 2);
+    const tile   = Math.min(130, maxByW, maxByH);
+    this.tileW   = tile;
+    this.tileH   = tile;
+    this.gapX    = Math.max(10, Math.min(18, Math.floor((availW - 3 * tile) / 2)));
+    this.gapY    = this.gapX;
+    const gridW  = 3 * this.tileW + 2 * this.gapX;
+    const gridH  = 2 * this.tileH + this.gapY;
+    this.gridL   = Math.floor((gameW - gridW) / 2);
+    // Centre the grid vertically in the available band (below phase banner)
+    this.gridT   = 145 + Math.round((availH - gridH) / 2);
   }
 
   private drawBackground(): void {
     const { gameW, gameH, isDark } = this;
-    const g = this.add.graphics();
+    const g  = this.add.graphics();
+    const s1 = gameH * 0.15;
+    const s2 = gameH * 0.85;
     if (isDark) {
-      const bands = [
-        { y: 0,   h: 80,           c: 0x08081a },
-        { y: 80,  h: 440,          c: 0x0d0d24 },
-        { y: 520, h: gameH - 520,  c: 0x080818 },
-      ];
-      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, gameW, b.h); }
+      for (const b of [
+        { y: 0,  h: s1,          c: 0x08081a },
+        { y: s1, h: s2 - s1,     c: 0x0d0d24 },
+        { y: s2, h: gameH - s2,  c: 0x080818 },
+      ]) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, gameW, b.h); }
       for (let i = 0; i < 55; i++) {
         g.fillStyle(0xffffff, 0.10 + Math.random() * 0.28);
-        g.fillCircle(Phaser.Math.Between(0, gameW), Phaser.Math.Between(0, 72), Math.random() < 0.15 ? 1.4 : 0.7);
+        g.fillCircle(Phaser.Math.Between(0, gameW), Phaser.Math.Between(0, s1 * 1.2),
+          Math.random() < 0.15 ? 1.4 : 0.7);
       }
       g.fillStyle(0xfffce8, 0.82); g.fillCircle(gameW - 70, 36, 20);
       g.fillStyle(0x08081a, 1);    g.fillCircle(gameW - 60, 31, 16);
     } else {
-      const bands = [
-        { y: 0,   h: 80,           c: 0xb8d4f0 },
-        { y: 80,  h: 440,          c: 0xcce0f8 },
-        { y: 520, h: gameH - 520,  c: 0xdce8ff },
-      ];
-      for (const b of bands) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, gameW, b.h); }
+      for (const b of [
+        { y: 0,  h: s1,          c: 0xb8d4f0 },
+        { y: s1, h: s2 - s1,     c: 0xcce0f8 },
+        { y: s2, h: gameH - s2,  c: 0xdce8ff },
+      ]) { g.fillStyle(b.c, 1); g.fillRect(0, b.y, gameW, b.h); }
       g.fillStyle(0xffd700, 0.85); g.fillCircle(gameW - 70, 36, 22);
       g.fillStyle(0xffe870, 0.4);  g.fillCircle(gameW - 70, 36, 33);
       g.fillStyle(0xffffff, 0.75);
@@ -109,23 +129,25 @@ export class GameScene extends Phaser.Scene {
 
   private buildTiles(): void {
     const nameColor = this.isDark ? '#7080a0' : '#5070a0';
+    const emojiFs   = `${Math.round(this.tileW * 0.32)}px`;
+    const nameFs    = `${Math.round(Math.max(9, this.tileW * 0.085))}px`;
     for (let i = 0; i < 6; i++) {
       const cx = this.tileCX(i);
       const cy = this.tileCY(i);
 
       const gfx = this.add.graphics();
       gfx.fillStyle(TILE_COLORS[i], this.dimAlpha);
-      gfx.fillRoundedRect(cx - TILE_W / 2, cy - TILE_H / 2, TILE_W, TILE_H, 16);
+      gfx.fillRoundedRect(cx - this.tileW / 2, cy - this.tileH / 2, this.tileW, this.tileH, this.tileRadius);
       this.tileGfx.push(gfx);
 
       this.tileBorderGfx.push(this.add.graphics());
 
       this.tileLabels.push(
-        this.add.text(cx, cy - 16, MASCOT_TILES[i], { fontSize: '42px' }).setOrigin(0.5)
+        this.add.text(cx, cy - this.tileH * 0.13, MASCOT_TILES[i], { fontSize: emojiFs }).setOrigin(0.5)
       );
 
-      this.add.text(cx, cy + 38, TILE_NAMES[i], {
-        fontSize: '11px', fontFamily: 'Poppins, sans-serif', color: nameColor,
+      this.add.text(cx, cy + this.tileH * 0.30, TILE_NAMES[i], {
+        fontSize: nameFs, fontFamily: 'Poppins, sans-serif', color: nameColor,
       }).setOrigin(0.5);
     }
   }
@@ -167,11 +189,10 @@ export class GameScene extends Phaser.Scene {
   private buildProgressDots(): void {
     const { gameW, gameH } = this;
     const seq = getState().sequence;
-    const total = seq.length;
     const spacing = 20;
-    const startX = gameW / 2 - ((total - 1) * spacing) / 2;
+    const startX = gameW / 2 - ((seq.length - 1) * spacing) / 2;
     const emptyColor = this.isDark ? 0x303060 : 0xb0c8e8;
-    for (let i = 0; i < total; i++) {
+    for (let i = 0; i < seq.length; i++) {
       const dot = this.add.graphics().setDepth(10);
       dot.fillStyle(emptyColor, 1);
       dot.fillCircle(startX + i * spacing, gameH - 28, 6);
@@ -197,7 +218,7 @@ export class GameScene extends Phaser.Scene {
       const cx = this.tileCX(i), cy = this.tileCY(i);
       this.tileGfx[i].clear();
       this.tileGfx[i].fillStyle(TILE_COLORS[i], this.dimAlpha);
-      this.tileGfx[i].fillRoundedRect(cx - TILE_W / 2, cy - TILE_H / 2, TILE_W, TILE_H, 16);
+      this.tileGfx[i].fillRoundedRect(cx - this.tileW / 2, cy - this.tileH / 2, this.tileW, this.tileH, this.tileRadius);
       this.tileBorderGfx[i].clear();
       this.tileLabels[i].setAlpha(0.5);
     }
@@ -207,15 +228,20 @@ export class GameScene extends Phaser.Scene {
     const cx = this.tileCX(i), cy = this.tileCY(i);
     this.tileGfx[i].clear();
     this.tileGfx[i].fillStyle(TILE_COLORS[i], alpha);
-    this.tileGfx[i].fillRoundedRect(cx - TILE_W / 2, cy - TILE_H / 2, TILE_W, TILE_H, 16);
+    this.tileGfx[i].fillRoundedRect(cx - this.tileW / 2, cy - this.tileH / 2, this.tileW, this.tileH, this.tileRadius);
     this.tileLabels[i].setAlpha(1);
   }
 
   private setCursorBorder(i: number, color: number, alpha: number): void {
     const cx = this.tileCX(i), cy = this.tileCY(i);
+    const pad = 3;
     this.tileBorderGfx[i].clear();
     this.tileBorderGfx[i].lineStyle(4, color, alpha);
-    this.tileBorderGfx[i].strokeRoundedRect(cx - TILE_W / 2 - 3, cy - TILE_H / 2 - 3, TILE_W + 6, TILE_H + 6, 18);
+    this.tileBorderGfx[i].strokeRoundedRect(
+      cx - this.tileW / 2 - pad, cy - this.tileH / 2 - pad,
+      this.tileW + pad * 2, this.tileH + pad * 2,
+      this.tileRadius + pad,
+    );
   }
 
   private playSequence(): void {
@@ -248,7 +274,6 @@ export class GameScene extends Phaser.Scene {
     this.updateCursorVisual();
   }
 
-  // Move the cursor with the Left / Right big buttons
   private moveCursor(dir: -1 | 1): void {
     if (this.phase !== 'inputting') return;
 
@@ -256,7 +281,7 @@ export class GameScene extends Phaser.Scene {
     const cx0 = this.tileCX(prev), cy0 = this.tileCY(prev);
     this.tileGfx[prev].clear();
     this.tileGfx[prev].fillStyle(TILE_COLORS[prev], this.dimAlpha);
-    this.tileGfx[prev].fillRoundedRect(cx0 - TILE_W / 2, cy0 - TILE_H / 2, TILE_W, TILE_H, 16);
+    this.tileGfx[prev].fillRoundedRect(cx0 - this.tileW / 2, cy0 - this.tileH / 2, this.tileW, this.tileH, this.tileRadius);
     this.tileBorderGfx[prev].clear();
     this.tileLabels[prev].setAlpha(0.5);
 
@@ -290,7 +315,7 @@ export class GameScene extends Phaser.Scene {
     const cx = this.tileCX(tileIdx), cy = this.tileCY(tileIdx);
     const overlay = this.add.graphics().setDepth(6);
     overlay.fillStyle(0x43a277, 0.65);
-    overlay.fillRoundedRect(cx - TILE_W / 2, cy - TILE_H / 2, TILE_W, TILE_H, 16);
+    overlay.fillRoundedRect(cx - this.tileW / 2, cy - this.tileH / 2, this.tileW, this.tileH, this.tileRadius);
     this.tweens.add({ targets: overlay, alpha: 0, duration: 380, onComplete: () => overlay.destroy() });
 
     this.playerPos++;
@@ -318,7 +343,6 @@ export class GameScene extends Phaser.Scene {
         this.playSequence();
       });
     } else {
-      // More tiles to select — re-enter input phase with cursor at same position
       this.time.delayedCall(220, () => {
         this.phase = 'inputting';
         this.updateCursorVisual();
@@ -330,7 +354,7 @@ export class GameScene extends Phaser.Scene {
     const cx = this.tileCX(tileIdx), cy = this.tileCY(tileIdx);
     const overlay = this.add.graphics().setDepth(6);
     overlay.fillStyle(0xff4747, 0.75);
-    overlay.fillRoundedRect(cx - TILE_W / 2, cy - TILE_H / 2, TILE_W, TILE_H, 16);
+    overlay.fillRoundedRect(cx - this.tileW / 2, cy - this.tileH / 2, this.tileW, this.tileH, this.tileRadius);
     this.tweens.add({ targets: overlay, alpha: 0, duration: 600, onComplete: () => overlay.destroy() });
 
     this.phaseText.setText('✗  WRONG — GAME OVER').setColor('#ff5555');
@@ -342,9 +366,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   shutdown(): void {
-    this.tileGfx = [];
+    this.tileGfx       = [];
     this.tileBorderGfx = [];
-    this.tileLabels = [];
-    this.progressDots = [];
+    this.tileLabels    = [];
+    this.progressDots  = [];
   }
 }
