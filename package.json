@@ -1,8 +1,8 @@
 {
-  "name": "wizkidz-conference-games",
+  "name": "wizkidz-games",
   "version": "1.0.0",
   "private": true,
-  "description": "Wiz Kidz conference booth games monorepo",
+  "description": "Wiz Kidz games monorepo",
   "engines": {
     "node": ">=18",
     "pnpm": ">=8"

@@ -71,13 +71,14 @@ export class GameOverScene extends Phaser.Scene {
       ).setOrigin(0.5);
     });
 
-    const prompt = this.add.text(width / 2, height - 48, '● PRESS ENTER FOR NEW GAME ●', {
+    const prompt = this.add.text(width / 2, height - 48, '● TAP OR PRESS ENTER FOR NEW GAME ●', {
       fontSize: '20px', fontFamily: 'Poppins, sans-serif', color: promptColor, fontStyle: 'bold',
     }).setOrigin(0.5);
     this.tweens.add({ targets: prompt, alpha: 0.22, duration: 700, ease: 'Sine.InOut', yoyo: true, repeat: -1 });
 
     this.input.keyboard?.once('keydown-ENTER', () => this.scene.start('MenuScene'));
     this.input.keyboard?.once('keydown-SPACE', () => this.scene.start('MenuScene'));
+    this.input.once('pointerdown', () => this.scene.start('MenuScene'));
 
     addThemeToggle(this, isDark);
   }

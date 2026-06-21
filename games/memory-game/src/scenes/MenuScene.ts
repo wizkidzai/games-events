@@ -30,7 +30,7 @@ export class MenuScene extends Phaser.Scene {
       fontFamily: 'Poppins, sans-serif', color: textPrimary, fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.17, 'Wiz Kidz  ✦  Watch the sequence · Navigate · Press Enter', {
+    this.add.text(width / 2, height * 0.17, 'Wiz Kidz  ✦  Watch the sequence · Tap a tile or navigate to select', {
       fontSize: `${Math.round(Math.min(13, width * 0.016))}px`,
       fontFamily: 'Poppins, sans-serif', color: textAccent,
     }).setOrigin(0.5);
@@ -63,24 +63,25 @@ export class MenuScene extends Phaser.Scene {
       fontFamily: 'Poppins, sans-serif', color: textSecondary,
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.63, 'Use ← → to navigate tiles · ENTER to select · Beat your score!', {
+    this.add.text(width / 2, height * 0.63, 'Tap a tile · or ← → to navigate then ENTER · Beat your score!', {
       fontSize: `${Math.round(Math.min(14, width * 0.017))}px`,
       fontFamily: 'Poppins, sans-serif', color: textSecondary,
     }).setOrigin(0.5);
 
-    const enterText = this.add.text(width / 2, height * 0.73, '● PRESS ENTER TO START ●', {
+    const enterText = this.add.text(width / 2, height * 0.73, '● TAP OR PRESS ENTER TO START ●', {
       fontSize: `${Math.round(Math.min(20, height * 0.037))}px`,
       fontFamily: 'Poppins, sans-serif', color: promptColor, fontStyle: 'bold',
     }).setOrigin(0.5);
     this.tweens.add({ targets: enterText, alpha: 0.25, duration: 700, ease: 'Sine.InOut', yoyo: true, repeat: -1 });
 
-    this.add.text(width / 2, height - 18, '← → to move cursor  ·  ENTER to select the highlighted tile', {
+    this.add.text(width / 2, height - 18, 'Tap any tile to select  ·  or ← → to navigate then ENTER', {
       fontSize: `${Math.round(Math.min(11, width * 0.014))}px`,
       fontFamily: 'Poppins, sans-serif', color: textMuted,
     }).setOrigin(0.5);
 
     this.input.keyboard?.on('keydown-ENTER', () => this.launchGame());
     this.input.keyboard?.on('keydown-SPACE', () => this.launchGame());
+    this.input.on('pointerdown', () => this.launchGame());
 
     this.scale.once('resize', () => { if (!this.hasLaunched) this.scene.restart(); }, this);
 

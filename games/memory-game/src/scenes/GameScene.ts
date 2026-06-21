@@ -24,6 +24,7 @@ export class GameScene extends Phaser.Scene {
   private tileGfx: Phaser.GameObjects.Graphics[] = [];
   private tileBorderGfx: Phaser.GameObjects.Graphics[] = [];
   private tileLabels: Phaser.GameObjects.Text[] = [];
+  private tileZones: Phaser.GameObjects.Zone[] = [];
 
   private phase: Phase = 'watching';
   private cursorIdx = 0;
@@ -58,6 +59,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(this.isDark ? '#12122a' : '#cce0f8');
     this.drawBackground();
     this.buildTiles();
+    this.buildTileZones();
     this.buildHUD();
     this.buildProgressDots();
     this.buildPhaseLabel();
@@ -150,6 +152,31 @@ export class GameScene extends Phaser.Scene {
         fontSize: nameFs, fontFamily: 'Poppins, sans-serif', color: nameColor,
       }).setOrigin(0.5);
     }
+  }
+
+  private buildTileZones(): void {
+    for (let i = 0; i < 6; i++) {
+      const zone = this.add.zone(this.tileCX(i), this.tileCY(i), this.tileW, this.tileH)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => this.onTileTap(i));
+      this.tileZones.push(zone);
+    }
+  }
+
+  private onTileTap(i: number): void {
+    if (this.phase !== 'inputting') return;
+    if (this.cursorIdx !== i) {
+      const prev = this.cursorIdx;
+      const cx0 = this.tileCX(prev), cy0 = this.tileCY(prev);
+      this.tileGfx[prev].clear();
+      this.tileGfx[prev].fillStyle(TILE_COLORS[prev], this.dimAlpha);
+      this.tileGfx[prev].fillRoundedRect(cx0 - this.tileW / 2, cy0 - this.tileH / 2, this.tileW, this.tileH, this.tileRadius);
+      this.tileBorderGfx[prev].clear();
+      this.tileLabels[prev].setAlpha(0.5);
+      this.cursorIdx = i;
+      this.updateCursorVisual();
+    }
+    this.onEnter();
   }
 
   private buildHUD(): void {
@@ -269,7 +296,7 @@ export class GameScene extends Phaser.Scene {
     this.cursorIdx = 0;
 
     const phaseColor = this.isDark ? '#ffc832' : '#c07000';
-    this.phaseText.setText('🎯  ← → NAVIGATE  ·  ENTER SELECT').setColor(phaseColor);
+    this.phaseText.setText('🎯  TAP a tile  ·  or ← → + ENTER').setColor(phaseColor);
     this.dimAllTiles();
     this.updateCursorVisual();
   }
@@ -369,6 +396,7 @@ export class GameScene extends Phaser.Scene {
     this.tileGfx       = [];
     this.tileBorderGfx = [];
     this.tileLabels    = [];
+    this.tileZones     = [];
     this.progressDots  = [];
   }
 }

@@ -76,7 +76,7 @@ export class MenuScene extends Phaser.Scene {
 
     const promptColor = this.isDark ? '#ffc832' : '#c07000';
     const promptFontSize = Math.round(Math.min(20, height * 0.037));
-    const enterText = this.add.text(width / 2, height * 0.79, '● PRESS ENTER TO START ●', {
+    const enterText = this.add.text(width / 2, height * 0.79, '● TAP  /  ENTER TO START ●', {
       fontSize: `${promptFontSize}px`,
       fontFamily: 'Poppins, sans-serif',
       color: promptColor,
@@ -84,7 +84,7 @@ export class MenuScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.tweens.add({ targets: enterText, alpha: 0.25, duration: 700, ease: 'Sine.InOut', yoyo: true, repeat: -1 });
 
-    this.add.text(width / 2, height - 18, 'Auto-selecting mascot every 1.5s  —  press ENTER any time', {
+    this.add.text(width / 2, height - 18, 'Tap a mascot card to choose  ·  TAP or ENTER to start', {
       fontSize: `${Math.round(Math.min(11, width * 0.014))}px`,
       fontFamily: 'Poppins, sans-serif',
       color: textMuted,
@@ -99,6 +99,22 @@ export class MenuScene extends Phaser.Scene {
 
     this.input.keyboard?.on('keydown-ENTER', () => this.launchGame());
     this.input.keyboard?.on('keydown-SPACE', () => this.launchGame());
+
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      const hh = this.cardH / 2 * 1.25;
+      if (pointer.y >= this.cardY - hh && pointer.y <= this.cardY + hh) {
+        for (let i = 0; i < 6; i++) {
+          if (Math.abs(pointer.x - this.cardCentersX[i]) <= this.cardW / 2 * 1.2) {
+            this.cycleTimer?.remove();
+            this.selectedID = i;
+            this.applySelection(i);
+            this.time.delayedCall(160, () => this.launchGame());
+            return;
+          }
+        }
+      }
+      this.launchGame();
+    });
 
     // Rebuild the scene when the canvas is resized so layout stays correct
     this.scale.once('resize', () => { if (!this.hasLaunched) this.scene.restart(); }, this);

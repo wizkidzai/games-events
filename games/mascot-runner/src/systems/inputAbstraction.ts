@@ -8,7 +8,7 @@ export type ActionType =
   | 'ACTION_1'
   | 'ACTION_2';
 
-export type InputSource = 'camera' | 'joystick' | 'buttons' | 'keyboard';
+export type InputSource = 'camera' | 'joystick' | 'buttons' | 'keyboard' | 'touch';
 
 export interface InputAction {
   type: ActionType;

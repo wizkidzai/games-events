@@ -53,7 +53,7 @@ export default function App() {
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
       <picture style={{ position: 'absolute', top: 14, left: 14, zIndex: 20, pointerEvents: 'none' }}>
         <source media="(max-width: 480px)" srcSet={symbolSrc} />
-        <img src={logoSrc} alt="Wiz Kidz" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
+        <img src={logoSrc} alt="Wiz Kidz" style={{ height: 80, width: 'auto', objectFit: 'contain' }} />
       </picture>
     </div>
   );
